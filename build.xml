@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+
+<!--
+     This is a build.xml file for building the PolyML plugin.
+     The 'dist' target compiles and creates the JAR file.
+-->
+
+<project name="PolyML" default="dist" basedir=".">
+
+  <!-- MODIFY THIS TO WORK WITH YOUR JEDIT LOCATION -->
+	<property name="jedit.install.dir" 
+  value="/home/ldixon/local/jedit/jedit4.3pre16"/>
+
+  <!-- Maybe set this to your build porperties dir -->
+	<!-- <property file="build.properties"/> -->
+  
+	<property name="jar.name"  value="PolyML.jar"/>
+
+	<property name="src.dir" value="."/>
+	<property name="build.dir" value="bin"/>
+	<property name="install.dir"  value="."/>
+
+	<property name="jedit.plugins.dir"  value="${jedit.install.dir}/jars"/>
+
+	<path id="project.class.path">
+		<pathelement location="${jedit.plugins.dir}/Console.jar"/>
+    <pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
+		<pathelement location="${jedit.install.dir}/jedit.jar"/>
+	</path>
+
+	<target name="init">
+		<mkdir dir="${build.dir}"/>
+	</target>
+
+	<target name="compile" depends="init">
+		<javac
+			srcdir="${src.dir}"
+			destdir="${build.dir}"
+			deprecation="on"
+			includeJavaRuntime="yes">
+			<classpath refid="project.class.path"/>
+			<exclude name="unused/**"/>
+		</javac>
+	</target>
+
+
+	<target name="dist" depends="compile">
+		<mkdir dir="${install.dir}"/>
+		<copy todir="${build.dir}">
+			<fileset dir="${src.dir}">
+				<include name="**/*.props"/>
+				<include name="**/*.xml"/>
+				<exclude name="**/build.xml"/>
+				<include name="**/*.html"/>
+				<include name="**/*.gif"/>
+				<include name="**/*.png"/>
+				<exclude name="**/unused"/>
+				<exclude name="**/unused/*"/>
+				<exclude name="**/tmp"/>
+				<exclude name="**/tmp/*"/>
+				<exclude name="**/build"/>
+				<exclude name="**/build/*"/>
+			</fileset>
+		</copy>
+		<jar jarfile="${install.dir}/${jar.name}">
+			<fileset dir="${build.dir}"/>
+		</jar>
+	</target>
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+		<delete>
+			<fileset dir="." includes="**/*~" defaultexcludes="no"/>
+		</delete>
+	</target>
+
+	<!-- Generate tags using 'ctags' program from ctags.sourceforge.net -->
+	<target name="tags">
+		<exec executable="ctags">
+			<arg value="-R" />
+			<arg path="." />
+		</exec>
+	</target>
+</project>
