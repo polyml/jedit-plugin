@@ -83,7 +83,7 @@ public class PolyMarkup {
 			}
 			// now read in to see what kind of special char it is
 			c = (char) r.read();
-			System.err.println("ESC: " + c);
+			// System.err.println("ESC: " + c);
 			if (c == 'd') { // end of description markup
 				inBlock = false;
 			} else if( c == ';') { // indicates that we are in output text part
@@ -110,7 +110,7 @@ public class PolyMarkup {
 		String content = new String();
 		boolean inBlock = true;
 
-		System.err.println("makePolyMarkupList: In Tag: " + k);
+		// System.err.println("makePolyMarkupList: In Tag: " + k);
 		
 		// until the block is ended by ESC then k
 		while (inBlock) {
@@ -130,7 +130,7 @@ public class PolyMarkup {
 			} else if (c == ',') { // if field break
 				if (content == null) { content = new String(); }
 				fields.add(new PolyMarkup(null, content));
-				System.err.println("content in field of '" + k + "' = '" + content + "'");
+				// System.err.println("content in field of '" + k + "' = '" + content + "'");
 				content = new String();
 			} else if (c >= 'A' && c <= 'Z') {
 				// if capital char, note new previous field if not empty, then
@@ -138,7 +138,7 @@ public class PolyMarkup {
 				// stuff as separate field.
 				if (content != null && !content.isEmpty()) {
 					fields.add(new PolyMarkup(null, content));
-					System.err.println("content in field of '" + k + "' = '" + content + "'");
+					// System.err.println("content in field of '" + k + "' = '" + content + "'");
 				}
 
 				// read subfield
@@ -155,10 +155,10 @@ public class PolyMarkup {
 			} else if (k.charValue() == c) { // k char indicates end of this block
 				if (content != null) { // avoid empty end of field fields.
 					fields.add(new PolyMarkup(null, content));
-					System.err.println("content in '" + k + "' = '" + content + "'");
+					// System.err.println("content in '" + k + "' = '" + content + "'");
 				}
 				inBlock = false;
-				System.err.println("end tag: " + c + "");
+				// System.err.println("end tag: " + c + "");
 			} else {
 				// badly formed, add content so far to error
 				if (content != null) {
@@ -179,7 +179,7 @@ public class PolyMarkup {
 		// ignore until first escape
 		c = (char) r.read();
 		while (c != ESC) {
-			System.err.println("makePolyMarkup: read before ESC: " + c);
+			// System.err.println("makePolyMarkup: read before ESC: " + c);
 			c = (char) r.read();
 		}
 		c = (char) r.read();

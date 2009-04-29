@@ -8,6 +8,11 @@
 		polyml.PolyMLPlugin.sendBufferToPolyML(buffer);
 		</CODE>
 	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-restart_polyml">
+		<CODE>
+		polyml.PolyMLPlugin.restartPolyML();
+		</CODE>
+	</ACTION>
 	<ACTION NAME="polyml-menu.mitem-new">
 		<CODE>
 		polyml.PolyMLPlugin.newShellBuffer();

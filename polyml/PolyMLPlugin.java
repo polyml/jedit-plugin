@@ -6,6 +6,8 @@ package polyml;
 
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.gjt.sp.jedit.Buffer;
@@ -17,6 +19,7 @@ import org.gjt.sp.jedit.msg.BufferUpdate;
 
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
+import java.util.regex.Pattern;
 
 /**
  * Plugin class the PolyML Plugin for jedit.
@@ -29,6 +32,13 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	public static final String NAME = "PolyML Plugin";
 	public static final String OPTION_PREFIX = "options.polyml.";
+
+	public static final String PROPS_POLY_IDE_COMMAND = "options.polyml.polyide-command";
+	public static final String PROPS_SHELL_COMMAND = "options.polyml.shell-command";
+	public static final String PROPS_SHELL_PROMPT = "options.polyml.shell-prompt";
+	public static final String PROPS_SHELL_MAX_HISTORY = "options.polyml.max-history";
+	
+	
 	
 	/** Associates Buffers to Processes that output to the buffer */
 	static Map<Buffer,ShellBuffer> shells;
@@ -41,17 +51,30 @@ public class PolyMLPlugin extends EBPlugin {
 		System.err.println("PolyMLPlugin: started!");
 	}
 	
+	public static List<String> getPolyIDECmd(){
+		String s = jEdit.getProperty(PROPS_POLY_IDE_COMMAND);
+		List<String> cmd = new LinkedList<String>();
+		for(String s2 : s.split(" ")){ cmd.add(s2); }
+		return cmd;
+	}
+	
+	public static String getPolyIDECmdString(){
+		return jEdit.getProperty(PROPS_POLY_IDE_COMMAND);
+	}
+	
 	// called when plugin is loaded/added
 	public void start() {
 		System.err.println("PolyMLPlugin: start called.");
 		errorSource = new DefaultErrorSource(NAME);
 		DefaultErrorSource.registerErrorSource(errorSource);
+		
 		try {
-			polyMLProcess = new PolyMLProcess();
+			polyMLProcess = new PolyMLProcess(getPolyIDECmd());
 		} catch (IOException e) {
 			polyMLProcess = null;
-			System.err.println("Failed to start PolyML: make sure the command 'poly' is in your path.");
-			e.printStackTrace();
+			System.err.println("Failed to start PolyML: make sure the command ('" 
+					+ getPolyIDECmdString() + "') is in your path.");
+			//e.printStackTrace();
 		}
 	}
 	
@@ -60,6 +83,23 @@ public class PolyMLPlugin extends EBPlugin {
 		stopAllShellBuffers(); 
 		DefaultErrorSource.unregisterErrorSource(errorSource);
 		if(polyMLProcess != null) { polyMLProcess.closeProcess(); }
+	}
+	
+	static public boolean restartPolyML() {
+		try { 
+			List<String> cmd = getPolyIDECmd();
+			if(polyMLProcess == null) { 
+				polyMLProcess = new PolyMLProcess(cmd);
+			} else {
+				polyMLProcess.restartProcessWithCommand(cmd);
+			}
+			return true;
+		} catch (IOException e) {
+			//e.printStackTrace();
+			System.err.println("PolyMLPlugin: Failed to restart PolyML!");
+			polyMLProcess = null;
+			return false;
+		}
 	}
 	
 	/** 

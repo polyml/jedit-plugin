@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.LinkedList;
+import java.util.List;
 
 public class PolyMLProcess {
 	static char ESC = 0x1b;
@@ -15,10 +17,22 @@ public class PolyMLProcess {
 	BufferedWriter writer;
 	BufferedReader reader;
 	
+	//
+	public PolyMLProcess(List<String> cmd) throws IOException {
+		super();
+		startProcessFromComannd(cmd);
+	}
+
 	public PolyMLProcess() throws IOException {
-		String cmd = "poly";
-		ProcessBuilder pb = new ProcessBuilder(cmd, "--ideprotocol");
-		
+		super();
+		List<String> cmd = new LinkedList<String>();
+		cmd.add("poly");
+		cmd.add("--ideprotocol");
+		startProcessFromComannd(cmd);
+	}
+	
+	public synchronized void startProcessFromComannd(List<String> cmd) throws IOException {
+		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.redirectErrorStream(true);
 		try {
 			process = pb.start();
@@ -33,9 +47,15 @@ public class PolyMLProcess {
 				.getOutputStream()));
 	}
 	
+	public void restartProcessWithCommand(List<String> cmd) throws IOException {
+		closeProcess();
+		startProcessFromComannd(cmd);
+	}
+	
 	public synchronized void closeProcess() {
 		if(process != null) {
 			send("" + EOT);
+			process.destroy();
 			process = null;
 		}
 	}

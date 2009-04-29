@@ -1,6 +1,6 @@
 /*
  *  ShellBufferOptionPane.java
- *  Copyright (c) 2007 Lucas Dixon
+ *  Copyright (c) 2009 Lucas Dixon
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@ import java.awt.FlowLayout;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
@@ -29,40 +30,29 @@ import org.gjt.sp.jedit.AbstractOptionPane;
 import org.gjt.sp.jedit.jEdit;
 
 /**
- * Options pane displayed when Character Map
- * is selected in the Plugin Options... tree
- * Allows the user to customize the appearence of the
- * character map plugin.
  *
  * @author     Lucas Dixon
  * @version    1.0
  */
-public class ShellBufferOptionPane extends AbstractOptionPane
+public class PolyMLPluginOptionsPane extends AbstractOptionPane
 {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -9030659155170934671L;
 	
-	
-	
+	/** the polyml command to run for the ide mode: with markup in messages, etc */
+	private JTextArea polyideCommand;
 	/** Textfield the shell Command to start */
 	private JTextArea shellCommand;
 	/** Extra text to put between process output and user input */
 	private JTextArea shellPrompt;
-	/** Panel containing components controllong the Shell command */
-	private JPanel shellCommandPanel;
-
-	
-	public static final String PROPS_SHELL_COMMAND = "options.polyml.shell-command";
-	public static final String PROPS_SHELL_PROMPT = "options.polyml.shell-prompt";
-	public static final String PROPS_MAX_HISTORY = "options.polyml.max-history";;
 	
 	/**
 	 * Default constructor. Note that the name is important!
 	 */
-	public ShellBufferOptionPane() {
-		super("Shell Buffer Options");
+	public PolyMLPluginOptionsPane() {
+		super("PolyML Plugin Options");
 	}
 
 	/**
@@ -70,13 +60,20 @@ public class ShellBufferOptionPane extends AbstractOptionPane
 	 * and labels read from the properties for this plugin
 	 */
 	public void _init() {
-		shellCommand = new JTextArea(jEdit.getProperty(PROPS_SHELL_COMMAND), 3, 50);
-		shellCommandPanel = createLabelledComponent("Shell Command: ", shellCommand);
-		addComponent(shellCommandPanel);
+		/** Panel containing components controlling the Shell command */
+		JPanel p;
 		
-		shellPrompt = new JTextArea(jEdit.getProperty(PROPS_SHELL_PROMPT), 3, 50);
-		shellCommandPanel = createLabelledComponent("Shell Prompt: ", shellPrompt);
-		addComponent(shellCommandPanel);
+		polyideCommand = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 3, 50);
+		p = createLabelledComponent("PolyML IDE Command: ", polyideCommand);
+		addComponent(p);
+		
+		shellCommand = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND), 3, 50);
+		p = createLabelledComponent("PolyML Shell Command: ", shellCommand);
+		addComponent(p);
+		
+		shellPrompt = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT), 3, 50);
+		p = createLabelledComponent("Interactive Shell Prompt: ", shellPrompt);
+		addComponent(p);
 	}
 
 	/**
@@ -84,8 +81,16 @@ public class ShellBufferOptionPane extends AbstractOptionPane
 	 * jedit properties.
 	 */
 	public void _save() {
-		jEdit.setProperty(PROPS_SHELL_COMMAND, shellCommand.getText());
-		jEdit.setProperty(PROPS_SHELL_PROMPT, shellPrompt.getText());
+		jEdit.setProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND, polyideCommand.getText());
+		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_COMMAND, shellCommand.getText());
+		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_PROMPT, shellPrompt.getText());
+		
+		if(!PolyMLPlugin.restartPolyML()) {
+			JOptionPane.showMessageDialog(null, "PolyML restart failed.", 
+					"The PolyML IDE-command ('" + polyideCommand.getText() 
+					+ "') failed to successfully start PolyML."
+					, JOptionPane.WARNING_MESSAGE);
+		}
 	}
 
 	/** 
