@@ -44,11 +44,18 @@ public class PolyMLPlugin extends EBPlugin {
 	static Map<Buffer,ShellBuffer> shells;
 	static DefaultErrorSource errorSource;
 	static PolyMLProcess polyMLProcess;
+	static ShellBuffer debugBuffer;
 	
 	public PolyMLPlugin() {
 		super();
 		shells = new Hashtable<Buffer, ShellBuffer>();
 		System.err.println("PolyMLPlugin: started!");
+	}
+	
+	public static void debugMessage(String s){
+		if(debugBuffer != null){
+			debugBuffer.mOutputBuffer.insert(debugBuffer.getPostPromptPos(), s);
+		}
 	}
 	
 	public static List<String> getPolyIDECmd(){
@@ -123,8 +130,11 @@ public class PolyMLPlugin extends EBPlugin {
 		 * CompileResult r = new CompileResult(m);
 		 */
 		CompileResult r = null;
-		r = polyMLProcess.compile(b.getPath(), b.getText(0, b.getLength()));
-
+		r = polyMLProcess.compileBuffer(b);
+		// compile(b.getPath(), b.getText(0, b.getLength()));
+		
+		debugMessage(r.stringOfResult());
+		
 		errorSource.removeFileErrors(b.getPath());
 		
 		if(r.isBug()) {
@@ -136,6 +146,12 @@ public class PolyMLPlugin extends EBPlugin {
 				errorSource.addError(new DefaultErrorSource.DefaultError(
 						errorSource, ErrorSource.ERROR, b.getPath(), 0,
 						0, 0, "Failed to load heap: '" + r.heapName + "'"));
+			}
+			
+			if(r.heapName == null) {
+				errorSource.addError(new DefaultErrorSource.DefaultError(
+						errorSource, ErrorSource.WARNING, b.getPath(), 0,
+						0, 0, "No heap file found."));
 			}
 			
 			for (PolyMLError e : r.errors) {
@@ -159,6 +175,12 @@ public class PolyMLPlugin extends EBPlugin {
 						line_offet, end_offset, e.message));
 			}
 		}
+	}
+	
+
+	static public ShellBuffer newDebugShellBuffer() {
+		debugBuffer = newShellBuffer();
+		return debugBuffer;
 	}
 	
 	
@@ -249,6 +271,7 @@ public class PolyMLPlugin extends EBPlugin {
 	/** handle buffer closing events to close associated process. */
 	public void handleMessage(EBMessage msg){
 		if(msg instanceof BufferUpdate) {
+			// if a buffer is closed; close its associated shell
 			if(((BufferUpdate)msg).getWhat() == BufferUpdate.CLOSING) {
 				Buffer b = ((BufferUpdate)msg).getBuffer();
 				ShellBuffer s = shells.get(b);
@@ -256,11 +279,15 @@ public class PolyMLPlugin extends EBPlugin {
 					s.stopProcess();
 					shells.remove(b);
 				}
+				if(s == debugBuffer) {
+					debugBuffer = null;
+				}
 			} else if(((BufferUpdate)msg).getWhat() == BufferUpdate.SAVED) {
+				// Dummy stub: maybe do something when PolyML buffer is saved
 				Buffer b = ((BufferUpdate)msg).getBuffer();
 				Mode m = b.getMode();
-				if(m.getName() == "PolyML Mode") {
-					System.err.println("PolyML Mode Buffer Saved!");
+				if(m.getName() == "PolyML Mode") { // Hacky: better way to check mode? 
+					System.err.println("PolyML Mode Buffer Saved! do something? ");
 				}
 			}
 		}

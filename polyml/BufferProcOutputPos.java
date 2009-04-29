@@ -4,7 +4,12 @@ import org.gjt.sp.jedit.buffer.BufferChangeAdapter;
 import org.gjt.sp.jedit.buffer.BufferListener;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 
-
+/**
+ * Manages a position in a buffer that gets moved when stuff is inserted or removed before that position. 
+ * 
+ * @author ldixon
+ *
+ */
 public class BufferProcOutputPos extends BufferChangeAdapter implements BufferListener {
 	private int mPos;
 	JEditBuffer mBuffer;

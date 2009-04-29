@@ -7,6 +7,7 @@ import java.awt.Graphics2D;
 import org.gjt.sp.jedit.textarea.TextArea;
 import org.gjt.sp.jedit.textarea.TextAreaExtension;
 
+// UNUSED; maybe want it for more elaborate PolyML GUI stuff
 public class ExpressionHighlight extends TextAreaExtension {
 	private TextArea mTextArea;
 	boolean mShow;

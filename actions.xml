@@ -13,6 +13,11 @@
 		polyml.PolyMLPlugin.restartPolyML();
 		</CODE>
 	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-new_debug_buffer">
+		<CODE>
+		polyml.PolyMLPlugin.newDebugShellBuffer();
+		</CODE>
+	</ACTION>
 	<ACTION NAME="polyml-menu.mitem-new">
 		<CODE>
 		polyml.PolyMLPlugin.newShellBuffer();

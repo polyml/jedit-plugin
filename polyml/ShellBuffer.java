@@ -61,10 +61,10 @@ public final class ShellBuffer extends Object {
 		mOutputBuffer = b;
 
 		mPos = new BufferProcOutputPos(b.getBuffer(), 
-				jEdit.getProperty(ShellBufferOptionPane.PROPS_SHELL_PROMPT));
+				jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT));
 		mHighlightRange = new TextRange(0,0,0,0);
 		
-		mHistory = new History(jEdit.getIntegerProperty(ShellBufferOptionPane.PROPS_MAX_HISTORY, 50));
+		mHistory = new History(jEdit.getIntegerProperty(PolyMLPlugin.PROPS_SHELL_MAX_HISTORY, 50));
 		
 		restartProcess();
 		
@@ -81,7 +81,7 @@ public final class ShellBuffer extends Object {
 	void restartProcess() throws IOException {
 		//dbgMsg("startProcess:Starting new process");
 		stopProcess();
-		String cmd = jEdit.getProperty(ShellBufferOptionPane.PROPS_SHELL_COMMAND);
+		String cmd = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND);
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.redirectErrorStream(true);
 		try {

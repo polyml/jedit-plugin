@@ -42,6 +42,22 @@ public class PolyMLError {
 		
 	}
 	
+	public String stringOfError() {
+		String statusString, locationString;
+	
+		if(kind == KIND_FATAL) {
+			statusString = "Error:";
+		} else if(kind == KIND_WARNING) {
+			statusString = "Warning:";
+		} else {
+			statusString = "Unkown Status: " + kind;
+		}
+		
+		locationString = " in: " + startPos + "-" + endPos;
+		
+		return statusString + locationString + "\n" + message + "\n\n";
+	}
+	
 	public boolean isFatal(){
 		return (kind == KIND_FATAL);
 	}

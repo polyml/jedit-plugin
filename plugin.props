@@ -44,6 +44,7 @@ plugin.polyml.PolyMLPlugin.docs = index.html
 plugin.polyml.PolyMLPlugin.menu=\
   polyml-menu.mitem-process-buffer \
   polyml-menu.mitem-restart_polyml \
+  polyml-menu.mitem-new_debug_buffer \
   - \
   polyml-menu.mitem-new \
   - \
@@ -65,6 +66,7 @@ plugin.polyml.PolyMLPlugin.menu=\
 # labels for the menu items
 polyml-menu.mitem-process-buffer.label=Process Buffer
 polyml-menu.mitem-restart_polyml.label=Restart PolyML
+polyml-menu.mitem-new_debug_buffer.label=New Debug Buffer
 polyml-menu.mitem-new.label=New ShellBuffer
 polyml-menu.mitem-stop-all.label=Stop All ShellBuffer Processes
 polyml-menu.mitem-start.label=Start ShellBuffer

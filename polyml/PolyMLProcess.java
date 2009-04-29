@@ -2,6 +2,9 @@ package polyml;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -9,10 +12,13 @@ import java.io.OutputStreamWriter;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.gjt.sp.jedit.Buffer;
+
 public class PolyMLProcess {
-	static char ESC = 0x1b;
-	static char EOT = 0x04;
-	
+	static final char ESC = 0x1b;
+	static final char EOT = 0x04;
+	static final String POLY_SAVE_DIR = ".polysave";
+		
 	Process process;
 	BufferedWriter writer;
 	BufferedReader reader;
@@ -32,6 +38,7 @@ public class PolyMLProcess {
 	}
 	
 	public synchronized void startProcessFromComannd(List<String> cmd) throws IOException {
+		
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.redirectErrorStream(true);
 		try {
@@ -54,7 +61,7 @@ public class PolyMLProcess {
 	
 	public synchronized void closeProcess() {
 		if(process != null) {
-			send("" + EOT);
+			sendToPoly("" + EOT);
 			process.destroy();
 			process = null;
 		}
@@ -76,7 +83,7 @@ public class PolyMLProcess {
 		
 		String compile_cmd = ESC + "R" + loadHeap + ESC + "," + srcFileName + ESC + 
 			"," + startPos + ESC + "," + src + ESC + 'r';
-		send(compile_cmd);
+		sendToPoly(compile_cmd);
 		PolyMarkup m = null;
 		try {
 			m = PolyMarkup.readPolyMarkup(reader);
@@ -85,7 +92,7 @@ public class PolyMLProcess {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return new CompileResult(loadHeap, m);
+		return new CompileResult(heap, m);
 	}
 	
 	/**
@@ -100,7 +107,45 @@ public class PolyMLProcess {
 		return compile(null, srcFileName, 0, src);
 	}
 	
-	public synchronized void send(String command) {
+	public class PolyMLSaveDir implements FileFilter {
+		@Override
+		
+		
+		public boolean accept(File f) {
+			File savedir = new File(f.getParent() + File.separator + POLY_SAVE_DIR);
+			//System.err.println("PolyMLSaveDir: \n  " + f + "\n  " + savedir);
+			return (f.compareTo(savedir) == 0);
+		}
+	}
+	
+	
+	public CompileResult compileBuffer(Buffer b) {
+		String s = b.getPath();
+		File p = new File(b.getDirectory()).getAbsoluteFile();
+		String heap = null;
+		boolean noProject = true;
+		
+		while(noProject && p != null) {
+			//System.err.println("looking for .polysave in:  " + p);
+			File[] polysavedir = p.listFiles(new PolyMLSaveDir());
+			if(polysavedir.length != 0) {
+				//System.err.println("Found .polysave in:  " + p);
+				File heapFile = 
+					new File(p.getAbsolutePath() + File.separator + POLY_SAVE_DIR 
+						+ File.separator + s.substring(p.getPath().length()) + ".save");
+				//System.err.println("Looking for:  " + heapFile);
+				if(heapFile.exists()){
+					heap = heapFile.getAbsolutePath();
+					noProject = false;
+				}
+			}
+			p = p.getParentFile();
+		}
+		
+		return compile(heap, s, 0,  b.getText(0, b.getLength()));
+	}
+	
+	public synchronized void sendToPoly(String command) {
 		if(writer != null){
 			try {
 				writer.write(command);
