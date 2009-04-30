@@ -7,6 +7,8 @@ import java.util.Date;
 import javax.swing.SwingUtilities;
 
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.jEdit;
+
 import javax.swing.text.StyledDocument;
 import javax.swing.text.StyleConstants;
 import javax.swing.JTextField;
@@ -29,6 +31,11 @@ public class BufferEditor {
 		mBuffer = buf;
 	}
 	
+	public BufferEditor() {
+		//this(jEdit.newFile(jEdit.getFirstView()));
+		this(jEdit.newFile(null));
+	}
+	
 	public Buffer getBuffer() {
 		return mBuffer;
 	}
@@ -44,10 +51,23 @@ public class BufferEditor {
 	public void insert(int pos, String s) {
 		SwingUtilities.invokeLater(new BEditInsert(pos, s));
 	}
+	
+	/** Insert string "s" into buffer at "pos" */
+	public void append(String s) {
+		SwingUtilities.invokeLater(new BEditAppend(s));
+	}
 
 	/** Append output from reader, which has listening thread "th", at position "p" */
 	public void appendReader(BufferedReader reader, ShellListenThread th, BufferProcOutputPos p) {
 		SwingUtilities.invokeLater(new BEditAppendReader(reader, th, p));
+	}
+	
+
+	/** Class wrapper for AWT thread safe append */
+	class BEditAppend implements Runnable {
+		String mStr;
+		public BEditAppend(String s) { mStr = s; }
+		public void run() { mBuffer.insert(mBuffer.getLength(), mStr); }
 	}
 	
 	/** Class wrapper for AWT thread safe insertion */

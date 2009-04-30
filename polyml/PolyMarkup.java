@@ -18,7 +18,8 @@ import java.util.List;
  * 
  */
 public class PolyMarkup {
-	public static char ESC = 0x1b;
+	public static int ESC = 0x1b;
+	public static int EOT = -1; // end of transmition
 
 	/**
 	 * 
@@ -72,25 +73,28 @@ public class PolyMarkup {
 		boolean inBlock = true;
 		// start off with description meta-data, so don't output it
 		boolean output_text = false; 
-		char c;
+		int c;
 		String loctag = new String();
 		
 		// System.err.println("D Tag!");
 		while (inBlock) {
-			c = (char) r.read();
+			c = r.read();
 			while (c != ESC) {
 				// add to content only if we are in output_text part
-				if (output_text) { content += c; }
+				if (output_text) { content += ((char)c); }
 				else { loctag += c; }
-				c = (char) r.read();
+				c = r.read();
 			}
 			// now read in to see what kind of special char it is
-			c = (char) r.read();
+			c = r.read();
 			// System.err.println("ESC: " + c);
-			if (c == 'd') { // end of description markup
+			if (((char)c) == 'd') { // end of description markup
 				inBlock = false;
-			} else if( c == ';') { // indicates that we are in output text part
+			} else if( ((char)c) == ';') { // indicates that we are in output text part
 				output_text = true;
+			} else if(c == EOT) {
+				throw new IOException("readDescriptionMessageMarkup: got EOT");
+				// ("readDescriptionMessageMarkup: got EOT", null, c);
 			} else {
 				loctag += ";";
 			}
@@ -164,7 +168,7 @@ public class PolyMarkup {
 				}
 				inBlock = false;
 				// System.err.println("end tag: " + c + "");
-			} else {
+			} else { // includes bad EOT characters
 				// badly formed, add content so far to error
 				if (content != null) {
 					fields.add(new PolyMarkup(null, content));

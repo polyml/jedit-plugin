@@ -97,17 +97,17 @@ public class CompileResult {
 			statusString = "Unkown bad/status: " + status;
 		}
 		
-		s += statusString;
+		s += "Status: " + statusString + "\n";
 		
 		if(heapName == null) {
 			heapString = "No heap found, running with defaut Poly heap.";
 		} else {
-			heapString = "Running from heap: " + heapName;
+			heapString = "From heap: " + heapName;
 		}
 		
-		s += "\n" + heapString + "";
+		s += heapString + "\n";
 		
-		finalOffsetString = "Got to: " + finalOffset + "\n\n";
+		finalOffsetString = "Checked file up to: " + finalOffset + "\n\n";
 		
 		s += finalOffsetString;
 		

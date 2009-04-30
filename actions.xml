@@ -3,7 +3,7 @@
 <!-- Actions in here corespond to the menu item names in the props file. -->
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
-	<ACTION NAME="polyml-menu.mitem-process-buffer">
+	<ACTION NAME="polyml-menu.mitem-process_buffer">
 		<CODE>
 		polyml.PolyMLPlugin.sendBufferToPolyML(buffer);
 		</CODE>
@@ -38,22 +38,22 @@
 		polyml.PolyMLPlugin.restartShellInBuffer(buffer);
     </CODE>
   </ACTION>
-  <ACTION NAME="polyml-menu.mitem-stop-all">
+  <ACTION NAME="polyml-menu.mitem-stop_all">
 		<CODE>
     polyml.PolyMLPlugin.stopAllShellBuffers();
 		</CODE>
   </ACTION>
-  <ACTION NAME="polyml-menu.mitem-process-shellbuf-to-eof">
+  <ACTION NAME="polyml-menu.mitem-process_shellbuf_to_eof">
 		<CODE>
     polyml.PolyMLPlugin.processShellBufferToEOF(buffer);
     </CODE>
   </ACTION>
-    <ACTION NAME="polyml-menu.mitem-prev-command">
+    <ACTION NAME="polyml-menu.mitem-prev_command">
 		<CODE>
     polyml.PolyMLPlugin.prevCommand(buffer);
 		</CODE>
   </ACTION>
-  <ACTION NAME="polyml-menu.mitem-next-command">
+  <ACTION NAME="polyml-menu.mitem-next_command">
     <CODE>
     polyml.PolyMLPlugin.nextCommand(buffer);
     </CODE>
@@ -61,12 +61,12 @@
 <!-- 
   <ACTION NAME="polyml-menu.mitem-send-cur-buffer">
 		<CODE>
-    	System.err.println("polyml-menu.mitem-send-cur-buffer");
+    	System.err.println("polyml-menu.mitem-send_cur_buffer");
     	</CODE>
   </ACTION>
   <ACTION NAME="polyml-menu.mitem-send-cur-command">
 		<CODE>
-    	System.err.println("polyml-menu.mitem-send-cur-command");		
+    	System.err.println("polyml-menu.mitem-send_cur_command");		
     	</CODE>
   </ACTION>
   -->

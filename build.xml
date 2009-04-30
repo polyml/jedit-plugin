@@ -23,8 +23,7 @@
 	<property name="jedit.plugins.dir"  value="${jedit.install.dir}/jars"/>
 
 	<path id="project.class.path">
-		<pathelement location="${jedit.plugins.dir}/Console.jar"/>
-    <pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
+		<pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
 		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 	</path>
 

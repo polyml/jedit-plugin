@@ -19,7 +19,7 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	public BufferProcOutputPos(JEditBuffer buf, String prompt){
 		mPos = buf.getLength();
 		mBuffer = buf;
-		mPrompt = prompt;
+		// mPrompt = prompt;
 		mBuffer.addBufferListener(this);
 		mIsProcessOut = false;
 	}
@@ -50,24 +50,23 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	}
 	
 	
-	public String getPrompt() {
-		String s;
-		synchronized(mPrompt){
-			s = mPrompt;
-		}
-		return s;
-	}
+	//public String getPrompt() {
+	//	String s;
+	//	synchronized(mPrompt){
+	//		s = mPrompt;
+	//	}
+	//	return s;
+	//}
 
-	public void setPrompt(String s) {
-		synchronized(mPrompt){ mPrompt = s; }
-	}
+	//public void setPrompt(String s) {
+	//	synchronized(mPrompt){ mPrompt = s; }
+	//}
 	
 	//void dbgMsg(String s) { 
 	//	System.err.println("BufferEditor:" + s);
 	//}
 	
 	public void bufferLoaded(JEditBuffer buffer) {
-		// TODO Auto-generated method stub
 		mBuffer = buffer;
 		setPos(mBuffer.getLength());
 	}

@@ -20,6 +20,7 @@ package polyml;
 
 import java.awt.FlowLayout;
 
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -47,6 +48,8 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	private JTextArea shellCommand;
 	/** Extra text to put between process output and user input */
 	private JTextArea shellPrompt;
+	/** */
+	private JCheckBox outputToDebugBuffer;
 	
 	/**
 	 * Default constructor. Note that the name is important!
@@ -62,6 +65,11 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	public void _init() {
 		/** Panel containing components controlling the Shell command */
 		JPanel p;
+		
+		outputToDebugBuffer = new JCheckBox("Copy output to debug buffer", 
+				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER)));
+		//p = createLabelledComponent(, outputToDebugBuffer);
+		addComponent(outputToDebugBuffer);
 		
 		polyideCommand = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 3, 50);
 		p = createLabelledComponent("PolyML IDE Command: ", polyideCommand);
@@ -81,6 +89,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	 * jedit properties.
 	 */
 	public void _save() {
+		jEdit.setProperty(PolyMLPlugin.PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER, String.valueOf(outputToDebugBuffer.isSelected()));
 		jEdit.setProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND, polyideCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_COMMAND, shellCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_PROMPT, shellPrompt.getText());
