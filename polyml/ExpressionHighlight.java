@@ -66,6 +66,7 @@ public class ExpressionHighlight extends TextAreaExtension {
 		int[] offsets = getOffsets(screenLine);
 		int x1 = offsets[0];
 		int x2 = offsets[1];
+		x2 = Math.max(x2, x1 + 2); // at least 2 pixels wide
 
 		gfx.setColor(mTextArea.getPainter().getStructureHighlightColor());
 

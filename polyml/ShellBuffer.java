@@ -59,72 +59,7 @@ public final class ShellBuffer extends Object {
 	
 	//TextRange mHighlightRange;
 	//Chunk mPreProcOutputChunk;
-	
 	//OutputStreamWriter mShellWriter;
-	
-	
-	public class PromptHighlighter extends TextAreaExtension {
-		TextArea textArea;
-		public PromptHighlighter(TextArea t) {
-			super();
-			textArea = t;
-			System.out.println("PromptHighlighter created");
-		}
-		public void paintValidLine(Graphics2D gfx, int screenLine,
-				int physicalLine, int start, int end, int y) {
-			int p = mPos.getPos();
-			int p2 = getPostPromptPos();
-			int line = textArea.getScreenLineOfOffset(p);
-			
-			// avoid doing anything if we are not on the right line. 
-			if(line != screenLine) { return; }
-						
-			// get start and end x positions for start-to-end range on this line
-			int[] xs = getOffsets(screenLine, p, p2);
-			int x1 = xs[0]; 
-			int x2 = xs[1];
-			
-			// get font height
-			FontMetrics fm = textArea.getPainter().getFontMetrics();
-			int height = fm.getHeight();
-			
-			// draw box
-			Composite c = gfx.getComposite();
-			gfx.setColor(Color.red);
-			gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float)0.5));
-			gfx.fillRect(x1, y, x2 - x1, height);
-			gfx.setComposite(c);
-		} 
-		
-		/**
-		 * 
-		 * given a screen line, a start and end offset (within buffer), 
-		 * returns the start "x1" and end "x2" horizontal drawing positions; 
-		 * If start is on an earlier line, gives start of line, and if end 
-		 * is on a later line, givens end of line. 
-		 * 
-		 * @param screenLine
-		 * @param start
-		 * @param end
-		 * @return array of size 2, with x1 and x2 positions. 
-		 */
-		int[] getOffsets(int screenLine, int start, int end)
-		{
-			int x1, x2;
-
-			int startLine = textArea.getScreenLineOfOffset(start);
-			int endLine = textArea.getScreenLineOfOffset(end);
-
-			if(startLine == screenLine) { x1 = start; }
-			else { x1 = textArea.getScreenLineStartOffset(screenLine); }
-
-			if(endLine == screenLine) { x2 = end; }
-			else { x2 = textArea.getScreenLineEndOffset(screenLine) - 1; }
-
-			return new int[] { textArea.offsetToXY(x1).x, textArea.offsetToXY(x2).x };
-		}
-	}
-	
 	
 	void dbgMsg(String s) { 
 		System.err.println("ShellBuffer:" + s);
@@ -141,7 +76,8 @@ public final class ShellBuffer extends Object {
 		mShellWriter = null;
 		mOutputBuffer = b;
 		
-		mPos = new BufferProcOutputPos(b.getBuffer(), 
+		// b.getBuffer()
+		mPos = new BufferProcOutputPos(this, 
 				jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT));
 
 		mHistory = new History(jEdit.getIntegerProperty(PolyMLPlugin.PROPS_SHELL_MAX_HISTORY, 50));
@@ -183,7 +119,7 @@ public final class ShellBuffer extends Object {
 	}
 
 	/**
-	 *
+	 * send a command to the underlying ML shell
 	 */
 	public void send(String command) throws IOException {
 		//dbgMsg("checking process != null");
@@ -202,34 +138,12 @@ public final class ShellBuffer extends Object {
 	
 	public void prevCommand() {
 		String newcur = mHistory.prev(getCurInput());
-		mOutputBuffer.replaceFromTo(getPostPromptPos(), mOutputBuffer.getLength(), newcur);
+		mOutputBuffer.replaceFromTo(mPos.getPostPromptPos(), mOutputBuffer.getLength(), newcur);
 	}
 	
 	public void nextCommand() {
 		String newcur = mHistory.next(getCurInput());
-		mOutputBuffer.replaceFromTo(getPostPromptPos(), mOutputBuffer.getLength(), newcur);
-	}
-
-	/** get effective pos: pos + if there's a prompt, then after that. */
-	public int getPostPromptPos(){
-		Buffer b = mOutputBuffer.getBuffer();
-		int p = mPos.getPos();
-		int l = b.getLength();
-		int endlen = l - p;
-		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
-		
-		// mPos.getPrompt();
-		int promptlen = Math.max(1,prompt.length());
-		
-		if( endlen < promptlen) {
-			return Math.min(p + 1,l);
-		} else {
-			if(b.getText(p, promptlen).compareTo(prompt) == 0){
-				return p + promptlen;
-			} else {
-				return p + 1;
-			}
-		}
+		mOutputBuffer.replaceFromTo(mPos.getPostPromptPos(), mOutputBuffer.getLength(), newcur);
 	}
 	
 	/**
@@ -238,8 +152,8 @@ public final class ShellBuffer extends Object {
 	 */
 	public String getCurInput() {
 		Buffer b = mOutputBuffer.getBuffer();
-		int l = b.getLength();
-		int postPromptPos = getPostPromptPos();
+		int postPromptPos = mPos.getPostPromptPos();
+		int l = b.getLength();		
 		return b.getText(postPromptPos, l - postPromptPos);
 	}
 	
@@ -249,8 +163,8 @@ public final class ShellBuffer extends Object {
 	 */
 	public void sendBufferTextToEOF() throws IOException {
 		int l = mOutputBuffer.getBuffer().getLength();
-		String s = getCurInput();
 		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
+		String s = getCurInput();
 		
 		System.err.println("prompt is: " + prompt);
 		
@@ -264,7 +178,6 @@ public final class ShellBuffer extends Object {
 		/* sends stuff to process */
 		send(s);
 	}
-	
 
 	/**
 	 * Stops the currently executing command, if any.
@@ -309,12 +222,32 @@ public final class ShellBuffer extends Object {
 		mShellListenThread = shellListenThread;
 	}
 	
+	/**
+	 * when something in the text area extensions are updated (e.g. prompt position),
+	 * tell the text area's showing the prompt position to update themselves.  
+	 * @param textArea
+	 */
+	public void invalidateTextAreas() {
+		for(TextArea t : mShownInTextAreas.keySet()){
+			t.invalidateScreenLineRange(t.getScreenLineOfOffset(mPos.getPos()), 
+					t.getScreenLineOfOffset(mPos.getPostPromptPos()));
+		}
+	}
+	
+	/**
+	 * 
+	 * @param textArea
+	 */
 	public void showInTextArea(TextArea textArea) {
-		PromptHighlighter promptHighlighter = new PromptHighlighter(textArea);
+		PromptHighlighter promptHighlighter = new PromptHighlighter(mPos, textArea);
 		mShownInTextAreas.put(textArea, promptHighlighter);
 		textArea.getPainter().addExtension(promptHighlighter);
 	}
 	
+	/**
+	 * 
+	 * @param textArea
+	 */
 	public void unShowInTextArea(TextArea textArea) {
 		PromptHighlighter promptHighlighter = mShownInTextAreas.get(textArea);
 		if(promptHighlighter != null) {
@@ -323,6 +256,9 @@ public final class ShellBuffer extends Object {
 		}
 	}
 	
+	/**
+	 * 
+	 */
 	public void unShowInAllTextAreas() {
 		for(TextArea t : mShownInTextAreas.keySet()){
 			t.getPainter().removeExtension(mShownInTextAreas.get(t));

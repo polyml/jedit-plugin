@@ -94,11 +94,15 @@ public class BufferEditor {
 		BufferProcOutputPos mPos;
 		
 		/** This class is used for action to insert content from a Process' reader that 
-		 * was actived by a ShellListenThread, and which has a ouput position marker of 
+		 * was activated by a ShellListenThread, and which has a output position marker of 
 		 * pos */
 		public BEditAppendReader(BufferedReader reader, ShellListenThread th,
 				BufferProcOutputPos pos) 
 		{ mReader = reader; mThread = th; mPos = pos; }
+		
+		/** 
+		 * called when the buffer is actually edited; send input from reader to output buffer
+		 */
 		public void run() {
 			//dbgMsg("BEditAppendReader:run-start");
 			String s = new String();
@@ -106,7 +110,7 @@ public class BufferEditor {
 				int i = 0;
 				/** never take more than 100ms in one go, else we'd lock AWT up. 
 				 * Another event will be raised later to pick up the rest of the 
-				 * stuff in the reader, but we should stop to allow oher AWT 
+				 * stuff in the reader, but we should stop to allow other AWT edit
 				 * events to get some time.
 				 * */
 				long timelimit = (new Date()).getTime() + 100; 
@@ -127,30 +131,13 @@ public class BufferEditor {
 				// dbgMsg("stopped reading.");
 				
 				int p = mPos.getPos();
-				
-				// Add in prompt if it's not already there. 
-				int l = mBuffer.getLength();
-				boolean addedPromptQ = false;
-				String prompt = "# ";
-				//dbgMsg("len: " + l + "; promptlen: " + prompt.length());
-				if(l >= p + prompt.length()){
-					String lastoutputstr = mBuffer.getText(p, prompt.length());
-					// dbgMsg("enough extra len, laststr: " + lastoutputstr);
-					if (! lastoutputstr.equals(prompt)){
-						s += prompt;
-						addedPromptQ = true;
-					}
-				} else {
-					s += prompt;
-					addedPromptQ = true;
-				}
-				
-				mPos.setIsProcessOut(true);
+				//mPos.setIsProcessOut(true);
 				mBuffer.insert(p, s);
-				mPos.setIsProcessOut(false);
-				if(addedPromptQ){
-					mPos.setPos(mPos.getPos() - prompt.length());
-				}
+				//mPos.setIsProcessOut(false);
+				//if(addedPromptQ){
+				//	mPos.setPos(mPos.getPos() - prompt.length());
+				//}
+				//mPos.movePosFwd(s.length());
 				
 				//dbgMsg("done insert");
 				mThread.setNotUpdating();

@@ -217,7 +217,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	static public void processShellBufferToEOF(Buffer b) {
 		try {
-			System.err.println("called processShellBufferToEOF");
+			//System.err.println("called processShellBufferToEOF");
 			ShellBuffer s = shellBufferOfBuffer(b);
 			if(s == null) {
 				System.err.println("Not a ShellBuffer!");
@@ -233,6 +233,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	/* start and restart are the same: they restart shell in the current buffer */
 	static public void startShellInBuffer(Buffer b) {
+		System.err.println("startShellInBuffer");
 		restartShellInBuffer(b);
 	}
 	
@@ -253,6 +254,8 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	
 	static public void restartShellInBuffer(Buffer b) {
+		System.err.println("restartShellInBuffer");
+
 		ShellBuffer sb = shellBufferOfBuffer(b);
 		if(sb != null){
 			try {
@@ -263,7 +266,15 @@ public class PolyMLPlugin extends EBPlugin {
 			}
 		} else {
 			try {
-				shells.put(b, new ShellBuffer(new BufferEditor(b)));
+				ShellBuffer s =  new ShellBuffer(new BufferEditor(b));
+				shells.put(b,s);
+				// turn on extra text area extensions for all views of this shell buffer
+				for(View v : jEdit.getViews()) {
+					if(v.getBuffer() == b) {
+						s.showInTextArea(v.getTextArea());
+						System.err.println("showing in view");
+					}
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.err.println(e.toString());
@@ -291,6 +302,7 @@ public class PolyMLPlugin extends EBPlugin {
 	public void usingShellBufferTextArea(EditPane editPane) {
 		Buffer b = editPane.getBuffer();
 		ShellBuffer s = shellBufferOfBuffer(b);
+		System.err.println("usingShellBufferTextArea");
 		if(s != null) {
 			s.showInTextArea(editPane.getTextArea());
 		}
