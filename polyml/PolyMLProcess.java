@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,6 +38,40 @@ public class PolyMLProcess {
 		startProcessFromComannd(cmd);
 	}
 	
+	
+	class DebugBufferedReader extends BufferedReader {
+		String tmp;
+		
+		public DebugBufferedReader(Reader in) {
+			super(in);
+			tmp = new String();
+		}
+		
+		public void ouputTmp() {
+			PolyMLPlugin.debugBuffer.append(tmp);
+			tmp = new String();
+		}
+		
+		public int read() throws IOException {
+			if(! super.ready()) { ouputTmp();}
+			int i = super.read();
+			if(PolyMLPlugin.debugBuffer != null) {
+				if(i == 0x1b) { // if ESC character
+					tmp += "\\";
+				} else {
+					tmp += ((char)i);
+				}
+			}
+			return i;
+		}
+		
+		public boolean ready() throws IOException  {
+			if(super.ready()) { return true; }
+			else { ouputTmp(); return false; }
+		}
+	}
+	
+	
 	public synchronized void startProcessFromComannd(List<String> cmd) throws IOException {
 		
 		ProcessBuilder pb = new ProcessBuilder(cmd);
@@ -48,7 +83,7 @@ public class PolyMLProcess {
 			process = null;
 			throw e;
 		}
-		reader = new BufferedReader(new InputStreamReader(process
+		reader = new DebugBufferedReader(new InputStreamReader(process
 				.getInputStream()));
 		writer = new BufferedWriter(new OutputStreamWriter(process
 				.getOutputStream()));
@@ -80,7 +115,7 @@ public class PolyMLProcess {
 	public synchronized CompileResult compile(String heap, String srcFileName, int startPos, String src) {
 		String loadHeap;
 		if(heap != null) { loadHeap = heap; } else { loadHeap = ""; }
-		
+
 		String compile_cmd = ESC + "R" + loadHeap + ESC + "," + srcFileName + ESC + 
 			"," + startPos + ESC + "," + src + ESC + 'r';
 		sendToPoly(compile_cmd);
@@ -92,7 +127,7 @@ public class PolyMLProcess {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return new CompileResult(heap, m);
+		return new CompileResult(heap, srcFileName, m);
 	}
 	
 	/**
@@ -110,7 +145,6 @@ public class PolyMLProcess {
 	public class PolyMLSaveDir implements FileFilter {
 		@Override
 		
-		
 		public boolean accept(File f) {
 			File savedir = new File(f.getParent() + File.separator + POLY_SAVE_DIR);
 			//System.err.println("PolyMLSaveDir: \n  " + f + "\n  " + savedir);
@@ -119,7 +153,29 @@ public class PolyMLProcess {
 	}
 	
 	
-	public CompileResult compileBuffer(Buffer b) {
+	public File searchForProjectDir(Buffer b){
+		File p = new File(b.getDirectory()).getAbsoluteFile();
+		File projectDir = null;
+		
+		while(projectDir == null && p != null) {
+			//System.err.println("looking for .polysave in:  " + p);
+			File[] polysavedir = p.listFiles(new PolyMLSaveDir());
+			if(polysavedir.length != 0) {
+				//System.err.println("Found .polysave in:  " + p);
+				 projectDir = new File(p.getAbsolutePath() + File.separator + POLY_SAVE_DIR);
+				//System.err.println("Looking for:  " + heapFile);
+				if(! projectDir.exists()){
+					projectDir = null;
+				}
+			}
+			p = p.getParentFile();
+		}
+		
+		return projectDir;
+	}
+	
+	
+	public String searchForBufferHeapFile(Buffer b){
 		String s = b.getPath();
 		File p = new File(b.getDirectory()).getAbsoluteFile();
 		String heap = null;
@@ -142,7 +198,30 @@ public class PolyMLProcess {
 			p = p.getParentFile();
 		}
 		
-		return compile(heap, s, 0,  b.getText(0, b.getLength()));
+		return heap;
+	}
+	
+	public CompileResult compileBuffer(Buffer b) {
+		String p = b.getPath();
+		String src = b.getText(0, b.getLength());
+		
+		String preSetupString = new String();
+		File projectDir = searchForProjectDir(b);
+		if(projectDir != null){
+			p = projectDir.getParent();
+			if(p != null) {
+				preSetupString  = "OS.FileSys.chDir \"" + p + "\"; ";
+			}
+		} else {
+			File bFile = new File(p);
+			p = bFile.getParent();
+			if(p != null) {
+				preSetupString  = "OS.FileSys.chDir \"" + p + "\"; ";
+			}
+		}
+		System.err.println("PreStup String: " + preSetupString);
+		
+		return compile(searchForBufferHeapFile(b), p, 0, preSetupString + src);
 	}
 	
 	public synchronized void sendToPoly(String command) {

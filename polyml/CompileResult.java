@@ -15,13 +15,15 @@ public class CompileResult {
 	char status;
 	public int finalOffset;
 	public List<PolyMLError> errors;
+	public String srcFileName;
 	public String heapName;
 	
-	public CompileResult(String heap, char st, int e, List<PolyMLError> errs){
+	public CompileResult(String heap, String filename, char st, int e, List<PolyMLError> errs){
 		status = st;
 		finalOffset = e;
 		errors = errs;
 		heapName = heap;
+		srcFileName = filename;
 	}
 	
 	// dummy Compile Result for bugs. 
@@ -29,9 +31,11 @@ public class CompileResult {
 		return status == STATUS_BUG;
 	}
 	
-	public CompileResult(String heap, PolyMarkup m) {
+	public CompileResult(String heap, String filename, PolyMarkup m) {
 		errors = new LinkedList<PolyMLError>();
 		heapName = heap;
+		srcFileName = filename;
+		
 		if(m != null) {
 			try {
 				Iterator<PolyMarkup> i = m.getSubs().iterator();
@@ -97,14 +101,15 @@ public class CompileResult {
 			statusString = "Unkown bad/status: " + status;
 		}
 		
-		s += "Status: " + statusString + "\n";
-		
+
 		if(heapName == null) {
 			heapString = "No heap found, running with defaut Poly heap.";
 		} else {
 			heapString = "From heap: " + heapName;
 		}
 		
+		s += "\n* Status: " + statusString + "\n";
+		s += "Compiling: " + srcFileName + "\n";
 		s += heapString + "\n";
 		
 		finalOffsetString = "Checked file up to: " + finalOffset + "\n\n";

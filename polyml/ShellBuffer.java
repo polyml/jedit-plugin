@@ -25,6 +25,7 @@ import java.awt.Composite;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.textarea.StructureMatcher;
 import org.gjt.sp.jedit.textarea.TextArea;
@@ -100,22 +102,25 @@ public final class ShellBuffer extends Object {
 		stopProcess();
 		String cmd = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND);
 		ProcessBuilder pb = new ProcessBuilder(cmd);
+		// make process start at the location of this file. 
+		pb.directory(new File(mOutputBuffer.mBuffer.getDirectory()));
+		
 		pb.redirectErrorStream(true);
 		try {
 			mShellProcess = pb.start();
+			mShellListenThread = new ShellListenThread(mShellProcess
+					.getInputStream(), mOutputBuffer, mPos);
+			mShellListenThread.start();
+			mShellWriter = new BufferedWriter(new OutputStreamWriter(mShellProcess
+					.getOutputStream()));
+			showInAllTextAreas();
 		} catch (IOException e) {
 			System.err.println("ShellBuffer:" + "Failed to start process: " + cmd);
 			//dbgMsg("**** Failed to start process!!! ***");
 			mShellProcess = null;
 			throw e;
 		}
-		mShellListenThread = new ShellListenThread(mShellProcess
-				.getInputStream(), mOutputBuffer, mPos);
-		mShellListenThread.start();
-		mShellWriter = new BufferedWriter(new OutputStreamWriter(mShellProcess
-				.getOutputStream()));
 		//mShellWriter = new OutputStreamWriter(mShellProcess.getOutputStream());
-		
 		//dbgMsg("startProcess:started.");
 	}
 
@@ -190,6 +195,7 @@ public final class ShellBuffer extends Object {
 			//dbgMsg("stopProcess: closing old mShellWriter.");
 			try{
 				mShellWriter.close();
+				unShowInAllTextAreas();
 			} catch(IOException e) {
 				e.printStackTrace();
 				System.err.println("ShellBuffer:" + "stopProcess " + e.toString());
@@ -246,6 +252,19 @@ public final class ShellBuffer extends Object {
 			PromptHighlighter promptHighlighter = new PromptHighlighter(mPos, textArea);
 			mShownInTextAreas.put(textArea, promptHighlighter);
 			textArea.getPainter().addExtension(promptHighlighter);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param textArea
+	 */
+	public void showInAllTextAreas() {
+		for(View v : jEdit.getViews()) {
+			if(v.getBuffer() == mOutputBuffer.getBuffer()) {
+				showInTextArea(v.getTextArea());
+				//System.err.println("showing in view");
+			}
 		}
 	}
 	

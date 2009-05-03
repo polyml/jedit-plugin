@@ -198,7 +198,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	static public ShellBuffer newShellBuffer() {
 		Buffer b = jEdit.newFile(null);
-		System.err.println("newShellBuffer");
+		//System.err.println("newShellBuffer");
 
 		ShellBuffer s;
 		try {
@@ -236,7 +236,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	/* start and restart are the same: they restart shell in the current buffer */
 	static public void startShellInBuffer(Buffer b) {
-		System.err.println("startShellInBuffer");
+		//System.err.println("startShellInBuffer");
 		restartShellInBuffer(b);
 	}
 	
@@ -257,8 +257,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	
 	static public void restartShellInBuffer(Buffer b) {
-		System.err.println("restartShellInBuffer");
-
+		//System.err.println("restartShellInBuffer");
 		ShellBuffer sb = shellBufferOfBuffer(b);
 		if(sb != null){
 			try {
@@ -272,12 +271,7 @@ public class PolyMLPlugin extends EBPlugin {
 				ShellBuffer s =  new ShellBuffer(new BufferEditor(b));
 				shells.put(b,s);
 				// turn on extra text area extensions for all views of this shell buffer
-				for(View v : jEdit.getViews()) {
-					if(v.getBuffer() == b) {
-						s.showInTextArea(v.getTextArea());
-						System.err.println("showing in view");
-					}
-				}
+				s.showInAllTextAreas();
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.err.println(e.toString());
@@ -334,8 +328,7 @@ public class PolyMLPlugin extends EBPlugin {
 				Buffer b = bufferUpdate.getBuffer();
 				ShellBuffer s = shellBufferOfBuffer(b);
 				if(s != null){
-					s.stopProcess();
-					s.unShowInAllTextAreas();
+					s.stopProcess(); // note: this unshows text area extensions too
 					shells.remove(b);
 				}
 				if(debugBuffer != null && b == debugBuffer.mBuffer) { debugBuffer = null; }

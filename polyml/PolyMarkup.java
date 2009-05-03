@@ -79,7 +79,8 @@ public class PolyMarkup {
 		// System.err.println("D Tag!");
 		while (inBlock) {
 			c = r.read();
-			while (c != ESC) {
+			while (c != ESC && c != EOT) {
+				//System.err.println("readDescriptionMessageMarkup: " + (char)c);
 				// add to content only if we are in output_text part
 				if (output_text) { content += ((char)c); }
 				else { loctag += c; }
@@ -96,7 +97,7 @@ public class PolyMarkup {
 				throw new IOException("readDescriptionMessageMarkup: got EOT");
 				// ("readDescriptionMessageMarkup: got EOT", null, c);
 			} else {
-				loctag += ";";
+				loctag += ";" + c + ";";
 			}
 		}
 		return content + "<" + loctag + ">";
@@ -124,7 +125,9 @@ public class PolyMarkup {
 		// until the block is ended by ESC then k
 		while (inBlock) {
 			c = (char) r.read();
-			while (c != ESC) {
+			while (c != ESC && c != EOT) {
+				//System.err.println("readPolyMarkupWithin: " + (char)c);
+
 				// if not in a field, start one
 				if (content == null) { content = new String(); }
 				content += c;
@@ -186,18 +189,31 @@ public class PolyMarkup {
 		char c;
 		Character ch;
 		// ignore until first escape
-		c = (char) r.read();
-		while (c != ESC) {
-			// System.err.println("makePolyMarkup: read before ESC: " + c);
+		boolean stillReading = true;
+		PolyMarkup m = null;
+		
+		while(stillReading) {
 			c = (char) r.read();
+			while (c != ESC && c != EOT) {
+				//System.err.println("readPolyMarkup: " + (char)c);
+				c = (char) r.read();
+			}
+			c = (char) r.read();
+			if (c == 'D') {
+				// Ignore D tags in output
+				//if (content == null) { content = new String(); }
+				//content += 
+				readDescriptionMessageMarkup(r);
+			} else if (c >= 'A' && c <= 'Z') {
+				ch = Character.toLowerCase(c);
+				stillReading = false;
+				m = readPolyMarkupWithin(ch, r);
+			} else {
+				throw new MarkupException("makePolyMarkup: bad start kind", null, c);
+			}
 		}
-		c = (char) r.read();
-		if (c >= 'A' && c <= 'Z') {
-			ch = Character.toLowerCase(c);
-			return readPolyMarkupWithin(ch, r);
-		} else {
-			throw new MarkupException("makePolyMarkup: bad start kind", null, c);
-		}
+		
+		return m;
 	}
 	
 	// NOTE: interesting case for generic inefficiency in imperative languages: 
