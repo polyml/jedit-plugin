@@ -77,12 +77,13 @@ public final class ShellBuffer extends Object {
 		mOutputBuffer = b;
 		
 		// b.getBuffer()
-		mPos = new BufferProcOutputPos(this, 
-				jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT));
+		mPos = new BufferProcOutputPos(this);
 
 		mHistory = new History(jEdit.getIntegerProperty(PolyMLPlugin.PROPS_SHELL_MAX_HISTORY, 50));
 		
 		restartProcess();
+		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
+		mOutputBuffer.appendPrompt(mPos, prompt);
 		
 		//try {		
 		//} catch(IOException e) {
@@ -162,21 +163,23 @@ public final class ShellBuffer extends Object {
 	 * to the shell buffer process.
 	 */
 	public void sendBufferTextToEOF() throws IOException {
-		int l = mOutputBuffer.getBuffer().getLength();
+		// int l = mOutputBuffer.getBuffer().getLength();
 		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
 		String s = getCurInput();
+		mOutputBuffer.append("\n");
 		
-		System.err.println("prompt is: " + prompt);
-		
-		/* set position to end of buffer */
-		mPos.setPos(l);
-		/* add a new prompt */
-		mOutputBuffer.append(prompt);
+		//System.err.println("prompt is: " + prompt);
 		/* update history */
 		mHistory.add(s);
 		
+		//mOutputBuffer.insert(mPos.getPostPromptPos(), prompt);
+		mOutputBuffer.appendPrompt(mPos, prompt);
 		/* sends stuff to process */
 		send(s);
+		
+		/* Ordering of these statements is slightly complex: 
+		 * replacement and insertion are added to buffer edit queue; but prompt edit happen instantly. */
+		//mOutputBuffer.replaceFromTo(mPos.getPrePromptPos(), mPos.getPostPromptPos(), prompt);
 	}
 
 	/**
@@ -229,7 +232,7 @@ public final class ShellBuffer extends Object {
 	 */
 	public void invalidateTextAreas() {
 		for(TextArea t : mShownInTextAreas.keySet()){
-			t.invalidateScreenLineRange(t.getScreenLineOfOffset(mPos.getPos()), 
+			t.invalidateScreenLineRange(t.getScreenLineOfOffset(mPos.getPrePromptPos()), 
 					t.getScreenLineOfOffset(mPos.getPostPromptPos()));
 		}
 	}
@@ -239,9 +242,11 @@ public final class ShellBuffer extends Object {
 	 * @param textArea
 	 */
 	public void showInTextArea(TextArea textArea) {
-		PromptHighlighter promptHighlighter = new PromptHighlighter(mPos, textArea);
-		mShownInTextAreas.put(textArea, promptHighlighter);
-		textArea.getPainter().addExtension(promptHighlighter);
+		if(!mShownInTextAreas.containsKey(textArea)) {
+			PromptHighlighter promptHighlighter = new PromptHighlighter(mPos, textArea);
+			mShownInTextAreas.put(textArea, promptHighlighter);
+			textArea.getPainter().addExtension(promptHighlighter);
+		}
 	}
 	
 	/**

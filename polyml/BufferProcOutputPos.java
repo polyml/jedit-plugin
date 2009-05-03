@@ -13,16 +13,18 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  *
  */
 public class BufferProcOutputPos extends BufferChangeAdapter implements BufferListener {
-	private int mPos;
+	private int mPrePromptPos;
+	private int mPostPromptPos;
 	JEditBuffer mBuffer;
 	ShellBuffer mShellBuffer;
 	String mPrompt;
 	//boolean mIsProcessOut;
 
-	public BufferProcOutputPos(ShellBuffer buf, String prompt){
+	public BufferProcOutputPos(ShellBuffer buf){
 		mShellBuffer = buf;
 		mBuffer = mShellBuffer.getBufferEditor().getBuffer();
-		mPos = mBuffer.getLength();
+		mPrePromptPos = mBuffer.getLength();
+		mPostPromptPos = mBuffer.getLength();
 		// mPrompt = prompt;
 		mBuffer.addBufferListener(this);
 		//mIsProcessOut = false;
@@ -37,38 +39,92 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	//	mIsProcessOut = b;
 	//}
 	
-	public synchronized int getPos() {
+	/**
+	 * Get position of start of prompt; always within buffer size
+	 */
+	public synchronized int getPrePromptPos() {
 		//System.err.println("getPos: " + mPos);
 		//return 0;
-		return mPos;
-	}
-
-	public synchronized void movePosFwd(int i) {
-		setPos(mPos + i);
+		return (Math.min(mPrePromptPos, mBuffer.getLength()));
 	}
 	
 	/**
-	 * set pos, ensures that pos is within the buffer, 
+	 * Get position of end of prompt; always within buffer size
+	 */
+	public synchronized int getPostPromptPos() {
+		//System.err.println("getPos: " + mPos);
+		//return 0;
+		return (Math.min(mPostPromptPos, mBuffer.getLength()));
+	}
+	
+	/** 
+	 * Move prompt forward
+	 * @param i
+	 */
+	public synchronized void movePosFwd(int i) {
+		//setPostPromptPos(mPostPromptPos + i);
+		setPostPromptPos(mPostPromptPos + i);
+	}
+	
+	/**
+	 * Set position of start of prompt
+	 * ensures that pos is within the buffer, 
 	 * and if buffer length is greater than 0, then it's at least 
 	 * one character before the last one. 
 	 * @param pos
 	 */
-	public synchronized void setPos(int pos) {
+	public synchronized void setPrePromptPos(int pos) {
 		mShellBuffer.invalidateTextAreas();
 		int	l = mBuffer.getLength();
 		//System.err.println("setPos: l: " + l + "; mPos " + mPos + "; pos" + pos);
-		if(pos >= 0 && pos < l) {
-			mPos = pos;
-		} else if(pos >= l && l > 0){
-			mPos = l - 1;
+		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
+		int promptlen = prompt.length(); // Math.max(1,prompt.length());
+
+		mPrePromptPos = pos;
+		
+		if( mPrePromptPos + promptlen <= l) {
+			if(mBuffer.getText(mPrePromptPos, promptlen).compareTo(prompt) == 0){
+				mPostPromptPos = mPrePromptPos + promptlen;
+			} else {
+				mPostPromptPos = mPrePromptPos;
+			}
 		} else {
-			mPos = 0;
+			mPostPromptPos = mPrePromptPos;
 		}
+		
 		mShellBuffer.invalidateTextAreas();
 	}
 	
+	
+	/*
+	 * set position of end of prompt, ensures that pos is within the buffer, 
+	 * @param pos
+	 */
+	public synchronized void setPostPromptPos(int pos) {
+		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
+		int promptlen = prompt.length(); // Math.max(1,prompt.length());
+
+		mShellBuffer.invalidateTextAreas();
+
+		mPostPromptPos = pos;
+		
+		if( mPostPromptPos - promptlen >= 0) {
+			mPrePromptPos = mPostPromptPos - promptlen;
+			if(mBuffer.getText(mPrePromptPos, promptlen).compareTo(prompt) == 0){
+				return;
+			} else {
+				mPrePromptPos = mPostPromptPos;
+			}
+		} else {
+			mPrePromptPos = mPostPromptPos;
+		}
+		
+		mShellBuffer.invalidateTextAreas();
+	}
+	
+	
 	/** get effective pos: pos + if there's a prompt, then after that. */
-	public synchronized int getPostPromptPos(){
+	/* public synchronized int getPostPromptPos(){
 		int l = mBuffer.getLength();
 		
 		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
@@ -76,21 +132,25 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 		
 		//System.err.println("getPostPromptPos: l=" + l + "; promptlen=" + promptlen + "; mPos=" + mPos);
 
-		/* quite complicated! must give position within the file; assumes l=0 xor mPos < l */
-		if(l == 0){ 
-			return 0; 
-		} else if( mPos + promptlen <= l) {
-			if(mBuffer.getText(mPos, promptlen).compareTo(prompt) == 0){
-				return mPos + promptlen;
+		// quite complicated! must give position within the file; assumes l=0 xor mPos < l
+		if( mPrePromptPos + promptlen <= l) {
+			if(mBuffer.getText(mPrePromptPos, promptlen).compareTo(prompt) == 0){
+				return mPrePromptPos + promptlen;
 			} else {
-				return mPos + 1;
+				return mPrePromptPos + 1;
 			}
-		} else if(mPos >= l) {
+		} else if(mPrePromptPos >= l) {
 			return l;
 		} else { 
-			return mPos + 1;
+			return mPrePromptPos + 1;
 		}
+	} */
+	
+	/* get position of end of prompt. */
+	/* public synchronized int getPostPromptPos(){
+		return mPostPromptPos;
 	}
+	*/
 	
 	//public String getPrompt() {
 	//	String s;
@@ -110,7 +170,7 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	
 	public synchronized void bufferLoaded(JEditBuffer buffer) {
 		mBuffer = buffer;
-		setPos(mBuffer.getLength());
+		setPrePromptPos(mBuffer.getLength());
 	}
 
 	/** Update the process position marker when stuff is added to the buffer. */
@@ -118,29 +178,26 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 		/* if a process is sending output, then it's always to the left of getPos() so we should always 
 		 * update the pos; otherwise only do it if it's user input before the current pos; */
 		//if(isProcessOut() || offset < getPos())
-		if(offset <= getPos()){ movePosFwd(length); }
-		System.err.println("content inserted, offset: " + offset + "; len " + length + "; newpos" + getPos());
+		if(offset < getPostPromptPos()){ movePosFwd(length); }
+		//System.err.println("content inserted, offset=" + offset + "; len=" + length + "; newpos=" + mPrePromptPos);
 	}
 
 	/** move mPos back if cut after it and overlaps with it. Else move it appropriately. */
 	public synchronized void contentRemoved(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
 		// removal includes current position; so need to adjust it
-		if(offset <= mPos){
+		if(offset < mPostPromptPos){
 			/* to the left of pos, update it... */
-			if(offset + length > mPos) {
-				/* if we also cut over pos, then move pos back to cut start */
-				if(offset > 0) {
-					mPos = offset - 1;
-				} else {
-					mPos = 0;
-				}
+			if(offset + length >= mPostPromptPos) {
+				/* we also cut over pos, then move pos back to cut start */
+				setPostPromptPos(offset);
 			} else {
 				/* move pos left by length */
-				mPos = mPos - length;
+				setPostPromptPos(mPostPromptPos - length);
 			}
-			mShellBuffer.invalidateTextAreas();
+			
+			// mShellBuffer.invalidateTextAreas();  NOT needed as cut will do it for us
 		}
-		System.err.println("content removed, offset: " + offset + "; len " + length + "; newpos" + getPos());
+		//System.err.println("content removed, offset: " + offset + "; len " + length + "; newpos" + mPrePromptPos);
 	}
 
 	public void foldHandlerChanged(JEditBuffer buffer) {

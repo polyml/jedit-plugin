@@ -53,16 +53,32 @@ public class BufferEditor {
 	}
 	
 	/** Insert string "s" into buffer at "pos" */
+	public void appendPrompt(BufferProcOutputPos promptPos, String s) {
+		SwingUtilities.invokeLater(new BEditAppendPrompt(promptPos, s));
+	}
+	
+	
+	/** Insert string "s" into buffer at "pos" */
 	public void append(String s) {
 		SwingUtilities.invokeLater(new BEditAppend(s));
 	}
 
 	/** Append output from reader, which has listening thread "th", at position "p" */
 	public void appendReader(BufferedReader reader, ShellListenThread th, BufferProcOutputPos p) {
-		SwingUtilities.invokeLater(new BEditAppendReader(reader, th, p));
+		SwingUtilities.invokeLater(new BEditInsertReaderPrePrompt(reader, th, p));
 	}
 	
-
+	/** Class wrapper for AWT thread safe insertion */
+	class BEditAppendPrompt implements Runnable {
+		String mStr; BufferProcOutputPos mPos;
+		public BEditAppendPrompt(BufferProcOutputPos pos, String s) { mPos = pos; mStr = s; }
+		public void run() { 
+			int l = mBuffer.getLength();
+			mBuffer.insert(l, mStr); 
+			mPos.setPrePromptPos(l);
+		}
+	}
+	
 	/** Class wrapper for AWT thread safe append */
 	class BEditAppend implements Runnable {
 		String mStr;
@@ -82,13 +98,15 @@ public class BufferEditor {
 		String mStr; int mFrom; int mTo;
 		public BEditReplaceFromTo(int from, int to, String s) { mFrom = from; mTo = to; mStr = s; }
 		public void run() { 
+			mBuffer.beginCompoundEdit();
 			mBuffer.remove(mFrom, mTo - mFrom);
 			mBuffer.insert(mFrom, mStr); 
+			mBuffer.endCompoundEdit();
 		}
 	}
 
 	/** Append output from reader, which has listening thread "th", at position "pos" */
-	class BEditAppendReader implements Runnable {
+	class BEditInsertReaderPrePrompt implements Runnable {
 		BufferedReader mReader;
 		ShellListenThread mThread;
 		BufferProcOutputPos mPos;
@@ -96,7 +114,7 @@ public class BufferEditor {
 		/** This class is used for action to insert content from a Process' reader that 
 		 * was activated by a ShellListenThread, and which has a output position marker of 
 		 * pos */
-		public BEditAppendReader(BufferedReader reader, ShellListenThread th,
+		public BEditInsertReaderPrePrompt(BufferedReader reader, ShellListenThread th,
 				BufferProcOutputPos pos) 
 		{ mReader = reader; mThread = th; mPos = pos; }
 		
@@ -130,7 +148,7 @@ public class BufferEditor {
 				}
 				// dbgMsg("stopped reading.");
 				
-				int p = mPos.getPos();
+				int p = mPos.getPrePromptPos();
 				//mPos.setIsProcessOut(true);
 				mBuffer.insert(p, s);
 				//mPos.setIsProcessOut(false);

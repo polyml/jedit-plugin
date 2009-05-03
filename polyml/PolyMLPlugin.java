@@ -198,14 +198,17 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	static public ShellBuffer newShellBuffer() {
 		Buffer b = jEdit.newFile(null);
-		
+		System.err.println("newShellBuffer");
+
 		ShellBuffer s;
 		try {
 			s = new ShellBuffer(new BufferEditor(b));
 			shells.put(b, s);
 			// show buffer after adding to shell list so that buffer 
 			// changed events trigger use of text area extensions. 
-			jEdit.getFirstView().showBuffer(b);
+			View v = jEdit.getFirstView();
+			v.showBuffer(b);
+			s.showInTextArea(v.getTextArea());
 			return s;
 		} catch (IOException e) {
 			e.printStackTrace();
