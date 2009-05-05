@@ -57,14 +57,13 @@ public class CompileResult {
 
 					while (i.hasNext()) {
 						PolyMarkup m2 = i.next();
-						if (m2.getKind() == 'e') {
+						if (m2.getKind() == 'E') {
 							errors.add(new PolyMLError(m2));
 						} else {
 							throw new MarkupException(
-									"CompileResult:un-expected kind", m2);
+									"CompileResult:un-expected kind: " + m2.getKind(), m2);
 						}
 					}
-
 				} else {
 					throw new MarkupException("CompileResult:bad status", m);
 				}

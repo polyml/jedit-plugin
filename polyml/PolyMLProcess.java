@@ -15,60 +15,59 @@ import java.util.List;
 
 import org.gjt.sp.jedit.Buffer;
 
+import polyml.ShellBuffer.PushStringToBuffer;
+import pushstream.CopyPushStream;
+import pushstream.PushStream;
+import pushstream.TimelyCharToStringStream;
+import pushstream.ReaderThread;
+
+import errorlist.DefaultErrorSource;
+
 public class PolyMLProcess {
 	static final char ESC = 0x1b;
 	static final char EOT = 0x04;
 	static final String POLY_SAVE_DIR = ".polysave";
-		
+	
 	Process process;
 	BufferedWriter writer;
 	BufferedReader reader;
+	ReaderThread polyListener; 
+	DefaultErrorSource errorSource;
+	PolyMarkupPushStream errorPushStream;
 	
 	//
-	public PolyMLProcess(List<String> cmd) throws IOException {
+	public PolyMLProcess(List<String> cmd, DefaultErrorSource err) throws IOException {
 		super();
+		errorSource = err;
 		startProcessFromComannd(cmd);
 	}
 
-	public PolyMLProcess() throws IOException {
+	public PolyMLProcess(DefaultErrorSource err) throws IOException {
 		super();
+		errorSource = err;
 		List<String> cmd = new LinkedList<String>();
 		cmd.add("poly");
 		cmd.add("--ideprotocol");
 		startProcessFromComannd(cmd);
 	}
 	
+
 	
-	class DebugBufferedReader extends BufferedReader {
-		String tmp;
+
+	public class PushStringToDebugBuffer implements PushStream<String> {
+
+		public PushStringToDebugBuffer() { }
 		
-		public DebugBufferedReader(Reader in) {
-			super(in);
-			tmp = new String();
+		public void add(String s) { 
+			PolyMLPlugin.debugMessage(s);
+		}
+
+		public void add(String s, boolean isMore) { add(s); }
+
+		public void close() {
+			PolyMLPlugin.debugMessage("<EOF>");
 		}
 		
-		public void ouputTmp() {
-			PolyMLPlugin.debugBuffer.append(tmp);
-			tmp = new String();
-		}
-		
-		public int read() throws IOException {
-			if(! super.ready()) { ouputTmp();}
-			int i = super.read();
-			if(PolyMLPlugin.debugBuffer != null) {
-				if(i == 0x1b) { // if ESC character
-					tmp += "\\";
-				} else {
-					tmp += ((char)i);
-				}
-			}
-			return i;
-		}
-		
-		public boolean ready() throws IOException  {
-			if(super.ready()) { return true; }
-			else { ouputTmp(); return false; }
-		}
 	}
 	
 	
@@ -83,8 +82,19 @@ public class PolyMLProcess {
 			process = null;
 			throw e;
 		}
-		reader = new DebugBufferedReader(new InputStreamReader(process
+		reader = new BufferedReader(new InputStreamReader(process
 				.getInputStream()));
+		
+	    errorPushStream = new PolyMarkupPushStream(errorSource);
+		
+		polyListener = 
+			new ReaderThread(reader, 
+				new CopyPushStream<Character>(
+						new TimelyCharToStringStream(new PushStringToDebugBuffer(), 100),
+						new PolyMarkup(errorPushStream)
+				)
+			);
+		polyListener.start();
 		writer = new BufferedWriter(new OutputStreamWriter(process
 				.getOutputStream()));
 	}
@@ -97,49 +107,36 @@ public class PolyMLProcess {
 	public synchronized void closeProcess() {
 		if(process != null) {
 			sendToPoly("" + EOT);
+			polyListener.pleaseStop();
 			process.destroy();
 			process = null;
 		}
 	}
 	
 	/**
-	 * 
 	 * @param heap
 	 * @param srcFileName
 	 * @param startPos
 	 * @param src
-	 * @return
-	 * @throws MarkupException
-	 * @throws IOException
 	 */
-	public synchronized CompileResult compile(String heap, String srcFileName, int startPos, String src) {
+	public void compile(String heap, String srcFileName, 
+			int startPos, String src) {
 		String loadHeap;
 		if(heap != null) { loadHeap = heap; } else { loadHeap = ""; }
 
 		String compile_cmd = ESC + "R" + loadHeap + ESC + "," + srcFileName + ESC + 
 			"," + startPos + ESC + "," + src + ESC + 'r';
+		
 		sendToPoly(compile_cmd);
-		PolyMarkup m = null;
-		try {
-			m = PolyMarkup.readPolyMarkup(reader);
-		} catch (MarkupException e) {
-			e.printMarkupException();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return new CompileResult(heap, srcFileName, m);
 	}
 	
 	/**
 	 * Compile the string
 	 * @param srcFileName
 	 * @param src
-	 * @return
-	 * @throws MarkupException
-	 * @throws IOException
 	 */
-	public CompileResult compile(String srcFileName, String src) {
-		return compile(null, srcFileName, 0, src);
+	public void compile(String srcFileName, String src) {
+		compile(null, srcFileName, 0, src);
 	}
 	
 	public class PolyMLSaveDir implements FileFilter {
@@ -201,7 +198,7 @@ public class PolyMLProcess {
 		return heap;
 	}
 	
-	public CompileResult compileBuffer(Buffer b) {
+	public void compileBuffer(Buffer b) {
 		String p = b.getPath();
 		String src = b.getText(0, b.getLength());
 		
@@ -221,7 +218,11 @@ public class PolyMLProcess {
 		}
 		System.err.println("PreStup String: " + preSetupString);
 		
-		return compile(searchForBufferHeapFile(b), p, 0, preSetupString + src);
+
+		String heap = searchForBufferHeapFile(b);
+		errorPushStream.setCompileInfo(heap, b);
+		
+		compile(heap, p, 0 - preSetupString.length(), preSetupString + src);
 	}
 	
 	public synchronized void sendToPoly(String command) {

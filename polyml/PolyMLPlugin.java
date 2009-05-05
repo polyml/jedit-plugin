@@ -20,6 +20,8 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.msg.ViewUpdate;
+
+import pushstream.PushStream;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 import java.util.regex.Pattern;
@@ -87,7 +89,7 @@ public class PolyMLPlugin extends EBPlugin {
 		DefaultErrorSource.registerErrorSource(errorSource);
 		
 		try {
-			polyMLProcess = new PolyMLProcess(getPolyIDECmd());
+			polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
 		} catch (IOException e) {
 			polyMLProcess = null;
 			System.err.println("Failed to start PolyML: make sure the command ('" 
@@ -103,11 +105,13 @@ public class PolyMLPlugin extends EBPlugin {
 		if(polyMLProcess != null) { polyMLProcess.closeProcess(); }
 	}
 	
+
+	
 	static public boolean restartPolyML() {
 		try { 
 			List<String> cmd = getPolyIDECmd();
 			if(polyMLProcess == null) { 
-				polyMLProcess = new PolyMLProcess(cmd);
+				polyMLProcess = new PolyMLProcess(cmd, errorSource);
 			} else {
 				polyMLProcess.restartProcessWithCommand(cmd);
 			}
@@ -120,75 +124,13 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 	
-	
 	/** 
 	 * send buffer to ML and process contents
 	 * @param b
 	 */
 	static public void sendBufferToPolyML(Buffer b) {
-		/* for debugging
-		 * ShellBuffer sb = newShellBuffer(); String ESC = "" + PolyMarkup.ESC;
-		 * 
-		 * System.err.println("sendBufferToPolyML: called. "); String
-		 * compile_cmd = ESC + "R" + "" + ESC + "," + b.getPath() + ESC + "," +
-		 * "0" + ESC + "," + b.getText(0, b.getLength()) + ESC + 'r';
-		 * polyMLProcess.send(compile_cmd);
-		 * 
-		 * PolyMarkup m = null;
-		 * 
-		 * m = PolyMarkup.readPolyMarkup(polyMLProcess.reader);
-		 * sb.getBufferEditor().insert(sb.getPostPromptPos(), m.toXMLString());
-		 * 
-		 * CompileResult r = new CompileResult(m);
-		 */
-		CompileResult r = null;
-		r = polyMLProcess.compileBuffer(b);
-		// compile(b.getPath(), b.getText(0, b.getLength()));
-		
-		debugMessage(r.stringOfResult());
-		
-		errorSource.removeFileErrors(b.getPath());
-		
-		if(r.isBug()) {
-			errorSource.addError(new DefaultErrorSource.DefaultError(
-					errorSource, ErrorSource.ERROR, b.getPath(), 0,
-					0, 0, "BUG: Failed to check using PolyML."));
-		} else {
-			if(r.status == CompileResult.STATUS_LOAD_FAILED) {
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.ERROR, b.getPath(), 0,
-						0, 0, "Failed to load heap: '" + r.heapName + "'"));
-			}
-			
-			if(r.heapName == null) {
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.WARNING, b.getPath(), 0,
-						0, 0, "No heap file found."));
-			}
-			
-			for (PolyMLError e : r.errors) {
-				int line = b.getLineOfOffset(e.startPos);
-				int line_offet = e.startPos - b.getLineStartOffset(line);
-				int end_line = b.getLineOfOffset(e.endPos);
-				int end_offset = 0;
-				if (end_line == line) {
-					end_offset = e.endPos - b.getLineStartOffset(end_line);
-				}
-				
-				int errorKind;
-				if(e.kind == PolyMLError.KIND_FATAL){
-					errorKind = ErrorSource.ERROR;
-				} else {
-					errorKind = ErrorSource.WARNING;
-				}
-				
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, errorKind, b.getPath(), line,
-						line_offet, end_offset, e.message));
-			}
-		}
+		polyMLProcess.compileBuffer(b);
 	}
-	
 
 	static public BufferEditor newDebugShellBuffer() {
 		debugBuffer = new BufferEditor();
@@ -197,7 +139,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	
 	static public ShellBuffer newShellBuffer() {
-		Buffer b = jEdit.newFile(null);
+		Buffer b = jEdit.newFile(null, jEdit.getFirstView().getBuffer().getDirectory());
 		//System.err.println("newShellBuffer");
 
 		ShellBuffer s;

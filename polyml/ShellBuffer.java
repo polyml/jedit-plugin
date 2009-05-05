@@ -24,9 +24,11 @@ import java.awt.Color;
 import java.awt.Composite;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +43,10 @@ import org.gjt.sp.jedit.textarea.TextArea;
 import org.gjt.sp.jedit.textarea.TextAreaExtension;
 import org.gjt.sp.jedit.textarea.StructureMatcher.Match;
 
+import pushstream.PushStream;
+import pushstream.ReaderThread;
+import pushstream.TimelyCharToStringStream;
+
 /**
  * A Buffer that takes input to some shell, and shows the output from that shell
  * 
@@ -51,7 +57,7 @@ import org.gjt.sp.jedit.textarea.StructureMatcher.Match;
 public final class ShellBuffer extends Object {
 
 	BufferEditor mOutputBuffer;
-	ShellListenThread mShellListenThread;
+	ReaderThread mShellListenThread;
 	Process mShellProcess;
 	BufferedWriter mShellWriter;
 	BufferProcOutputPos mPos;
@@ -96,6 +102,23 @@ public final class ShellBuffer extends Object {
 		//dbgMsg("shell started!");
 	}
 	
+	
+	public class PushStringToBuffer implements PushStream<String> {
+
+		public PushStringToBuffer() { }
+		
+		public void add(String s) { 
+			appendAtPrePrompt(s);
+		}
+
+		public void add(String s, boolean isMore) { add(s); }
+
+		public void close() {
+			appendAtPrePrompt("<EOF>");
+		}
+		
+	}
+	
 	/** When we throw IOException everything is correctly closed/null. */
 	void restartProcess() throws IOException {
 		//dbgMsg("startProcess:Starting new process");
@@ -108,8 +131,12 @@ public final class ShellBuffer extends Object {
 		pb.redirectErrorStream(true);
 		try {
 			mShellProcess = pb.start();
-			mShellListenThread = new ShellListenThread(mShellProcess
-					.getInputStream(), mOutputBuffer, mPos);
+			mShellListenThread = 
+				new ReaderThread(
+					new BufferedReader(new InputStreamReader(
+						mShellProcess.getInputStream())), 
+					new TimelyCharToStringStream(new PushStringToBuffer(), 100)
+					);
 			mShellListenThread.start();
 			mShellWriter = new BufferedWriter(new OutputStreamWriter(mShellProcess
 					.getOutputStream()));
@@ -124,6 +151,10 @@ public final class ShellBuffer extends Object {
 		//dbgMsg("startProcess:started.");
 	}
 
+	public void appendAtPrePrompt(String s) {
+		mOutputBuffer.insertAtBPos(mPos, s);
+	}
+	
 	/**
 	 * send a command to the underlying ML shell
 	 */
@@ -179,6 +210,7 @@ public final class ShellBuffer extends Object {
 		
 		//mOutputBuffer.insert(mPos.getPostPromptPos(), prompt);
 		mOutputBuffer.appendPrompt(mPos, prompt);
+		
 		/* sends stuff to process */
 		send(s);
 		
@@ -222,21 +254,13 @@ public final class ShellBuffer extends Object {
 	public void setBufferEditor(BufferEditor outputBuffer) {
 		mOutputBuffer = outputBuffer;
 	}
-
-	public ShellListenThread getShellListenThread() {
-		return mShellListenThread;
-	}
-
-	public void setShellListenThread(ShellListenThread shellListenThread) {
-		mShellListenThread = shellListenThread;
-	}
 	
 	/**
 	 * when something in the text area extensions are updated (e.g. prompt position),
 	 * tell the text area's showing the prompt position to update themselves.  
 	 * @param textArea
 	 */
-	public void invalidateTextAreas() {
+	public synchronized void invalidateTextAreas() {
 		for(TextArea t : mShownInTextAreas.keySet()){
 			t.invalidateScreenLineRange(t.getScreenLineOfOffset(mPos.getPrePromptPos()), 
 					t.getScreenLineOfOffset(mPos.getPostPromptPos()));
@@ -247,7 +271,7 @@ public final class ShellBuffer extends Object {
 	 * 
 	 * @param textArea
 	 */
-	public void showInTextArea(TextArea textArea) {
+	public synchronized void showInTextArea(TextArea textArea) {
 		if(!mShownInTextAreas.containsKey(textArea)) {
 			PromptHighlighter promptHighlighter = new PromptHighlighter(mPos, textArea);
 			mShownInTextAreas.put(textArea, promptHighlighter);
@@ -259,7 +283,7 @@ public final class ShellBuffer extends Object {
 	 * 
 	 * @param textArea
 	 */
-	public void showInAllTextAreas() {
+	public synchronized void showInAllTextAreas() {
 		for(View v : jEdit.getViews()) {
 			if(v.getBuffer() == mOutputBuffer.getBuffer()) {
 				showInTextArea(v.getTextArea());
@@ -272,7 +296,7 @@ public final class ShellBuffer extends Object {
 	 * 
 	 * @param textArea
 	 */
-	public void unShowInTextArea(TextArea textArea) {
+	public synchronized void unShowInTextArea(TextArea textArea) {
 		PromptHighlighter promptHighlighter = mShownInTextAreas.get(textArea);
 		if(promptHighlighter != null) {
 			textArea.getPainter().removeExtension(promptHighlighter);
@@ -283,7 +307,7 @@ public final class ShellBuffer extends Object {
 	/**
 	 * 
 	 */
-	public void unShowInAllTextAreas() {
+	public synchronized void unShowInAllTextAreas() {
 		for(TextArea t : mShownInTextAreas.keySet()){
 			t.getPainter().removeExtension(mShownInTextAreas.get(t));
 			mShownInTextAreas.remove(t);

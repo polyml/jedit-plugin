@@ -2,6 +2,9 @@ package polyml;
 
 import java.util.Iterator;
 
+import errorlist.DefaultErrorSource;
+import errorlist.ErrorSource;
+
 public class PolyMLError {
 	static char KIND_FATAL = 'E';
 	static char KIND_WARNING = 'W';
