@@ -54,6 +54,9 @@ public class PolyMLPlugin extends EBPlugin {
 	public PolyMLPlugin() {
 		super();
 		shells = new Hashtable<Buffer, ShellBuffer>();
+		errorSource = null;
+		polyMLProcess = null;
+		debugBuffer = null;
 		System.err.println("PolyMLPlugin: started!");
 	}
 	
@@ -87,15 +90,7 @@ public class PolyMLPlugin extends EBPlugin {
 		System.err.println("PolyMLPlugin: start called.");
 		errorSource = new DefaultErrorSource(NAME);
 		DefaultErrorSource.registerErrorSource(errorSource);
-		
-		try {
-			polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
-		} catch (IOException e) {
-			polyMLProcess = null;
-			System.err.println("Failed to start PolyML: make sure the command ('" 
-					+ getPolyIDECmdString() + "') is in your path.");
-			//e.printStackTrace();
-		}
+		restartPolyML();
 	}
 	
 	// called when plugin is un-loaded/removed
@@ -105,15 +100,14 @@ public class PolyMLPlugin extends EBPlugin {
 		if(polyMLProcess != null) { polyMLProcess.closeProcess(); }
 	}
 	
-
-	
 	static public boolean restartPolyML() {
+		System.err.println("restarting polyml...");
 		try { 
 			List<String> cmd = getPolyIDECmd();
 			if(polyMLProcess == null) { 
 				polyMLProcess = new PolyMLProcess(cmd, errorSource);
 			} else {
-				polyMLProcess.restartProcessWithCommand(cmd);
+				polyMLProcess.restartProcessFromCmd(cmd);
 			}
 			return true;
 		} catch (IOException e) {

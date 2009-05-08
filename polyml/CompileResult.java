@@ -44,15 +44,27 @@ public class CompileResult {
 					throw new MarkupException(
 							"CompileResult:status char wrong size", m);
 				}
-				char c = s.charAt(0);
-				if (c == STATUS_SUCCESS 
-						|| c == STATUS_LOAD_FAILED
-						|| c == STATUS_PARSE_FAILED
-						|| c == STATUS_TYPECHECK_FAILED
-						|| c == STATUS_EXCEPTION_RAISED) {
-					status = c;
-
+				status = s.charAt(0);
+				if (status == STATUS_SUCCESS){
 					s = i.next().getContent();
+					// convert ML minus to standard minus, so that integer can be parsed. 
+					s.replace('~', '-');
+					finalOffset = Integer.parseInt(s);
+				} else if (status == STATUS_EXCEPTION_RAISED) {
+					s = i.next().getContent();
+					// convert ML minus to standard minus, so that integer can be parsed. 
+					s.replace('~', '-');
+					finalOffset = Integer.parseInt(s);
+					s = i.next().getContent();
+					// FIXME: when Poly Gives back proper exception errors with location, parse them
+					errors.add(new PolyMLError(PolyMLError.KIND_EXCEPTION, 0, 0, s));
+				} else if(status == STATUS_LOAD_FAILED
+						|| status == STATUS_PARSE_FAILED
+						|| status == STATUS_TYPECHECK_FAILED) {
+					
+					s = i.next().getContent();
+					// convert ML minus to standard minus, so that integer can be parsed. 
+					s.replace('~', '-');
 					finalOffset = Integer.parseInt(s);
 
 					while (i.hasNext()) {

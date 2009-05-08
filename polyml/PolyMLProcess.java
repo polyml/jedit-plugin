@@ -22,6 +22,7 @@ import pushstream.TimelyCharToStringStream;
 import pushstream.ReaderThread;
 
 import errorlist.DefaultErrorSource;
+import errorlist.ErrorSource;
 
 public class PolyMLProcess {
 	static final char ESC = 0x1b;
@@ -39,16 +40,26 @@ public class PolyMLProcess {
 	public PolyMLProcess(List<String> cmd, DefaultErrorSource err) throws IOException {
 		super();
 		errorSource = err;
-		startProcessFromComannd(cmd);
+		process = null;
+		writer = null;
+		reader = null;
+		polyListener = null;
+		errorPushStream = null;
+		restartProcessFromCmd(cmd);
 	}
 
 	public PolyMLProcess(DefaultErrorSource err) throws IOException {
 		super();
 		errorSource = err;
+		process = null;
+		writer = null;
+		reader = null;
+		polyListener = null;
+		errorPushStream = null;
 		List<String> cmd = new LinkedList<String>();
 		cmd.add("poly");
 		cmd.add("--ideprotocol");
-		startProcessFromComannd(cmd);
+		restartProcessFromCmd(cmd);
 	}
 	
 
@@ -71,45 +82,63 @@ public class PolyMLProcess {
 	}
 	
 	
-	public synchronized void startProcessFromComannd(List<String> cmd) throws IOException {
+	public synchronized void restartProcessFromCmd(List<String> cmd) throws IOException {
+		closeProcess();
+		
+		System.err.println("restartProcessFromCmd:" + cmd);
 		
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.redirectErrorStream(true);
 		try {
+			System.err.println("PolyMLProcess:" + "start called: " + cmd);
 			process = pb.start();
+			
+			reader = new BufferedReader(new InputStreamReader(process
+					.getInputStream()));
+			writer = new BufferedWriter(new OutputStreamWriter(process
+					.getOutputStream()));
+			
+		    errorPushStream = new PolyMarkupPushStream(errorSource);
+			
+		    // setup and start listening thread. 
+			polyListener = 
+				new ReaderThread(reader, 
+					new CopyPushStream<Character>(
+							new TimelyCharToStringStream(new PushStringToDebugBuffer(), 100),
+							new PolyMarkup(errorPushStream)
+					)
+				);
+			polyListener.start();
+			
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: " + cmd);
 			process = null;
 			throw e;
 		}
-		reader = new BufferedReader(new InputStreamReader(process
-				.getInputStream()));
-		
-	    errorPushStream = new PolyMarkupPushStream(errorSource);
-		
-		polyListener = 
-			new ReaderThread(reader, 
-				new CopyPushStream<Character>(
-						new TimelyCharToStringStream(new PushStringToDebugBuffer(), 100),
-						new PolyMarkup(errorPushStream)
-				)
-			);
-		polyListener.start();
-		writer = new BufferedWriter(new OutputStreamWriter(process
-				.getOutputStream()));
-	}
-	
-	public void restartProcessWithCommand(List<String> cmd) throws IOException {
-		closeProcess();
-		startProcessFromComannd(cmd);
 	}
 	
 	public synchronized void closeProcess() {
 		if(process != null) {
-			sendToPoly("" + EOT);
+			try {
+				writer.close();
+				reader.close();
+			} catch (IOException e) {
+				System.err.println("PolyMLProcess:closeProcess");
+				e.printStackTrace();
+			}
 			polyListener.pleaseStop();
-			process.destroy();
+			
+			
+			//int i = process.exitValue(); 
+			//if(i != 0) { 
+			//	System.err.println("PolyMLProcess:destorying poly-process: exit value: " + i);
+			//	process.destroy(); 
+			//}
 			process = null;
+			writer = null;
+			reader = null;
+			polyListener = null;
+			errorPushStream = null;
 		}
 	}
 	
@@ -218,24 +247,29 @@ public class PolyMLProcess {
 		}
 		System.err.println("PreStup String: " + preSetupString);
 		
-
 		String heap = searchForBufferHeapFile(b);
 		errorPushStream.setCompileInfo(heap, b);
+		
+		errorSource.addError(new DefaultErrorSource.DefaultError(
+				errorSource, ErrorSource.WARNING, b.getPath(), 0,
+				0, 0, "Compiling ML ... "));
 		
 		compile(heap, p, 0 - preSetupString.length(), preSetupString + src);
 	}
 	
 	public synchronized void sendToPoly(String command) {
+		if(process == null) {}
 		if(writer != null){
 			try {
 				writer.write(command);
 				writer.newLine(); // CHECK: is this ok? 
 				writer.flush();
 			} catch (IOException e) {
-				System.err.println("Exit value from polyml: "
-						+ process.exitValue());
+				System.err.println("Exit value from polyml: " + process.exitValue());
 				e.printStackTrace();
 			}
+		} else {
+			System.err.println("PolyProcess: writer is null! ");
 		}
 	}
 

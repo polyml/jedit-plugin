@@ -35,6 +35,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		fileName = buffer.getPath();
 		CompileResult r = new CompileResult(heap, fileName, m);
 		
+		errorSource.removeFileErrors(fileName);
 		if(r.isBug()) {
 			errorSource.addError(new DefaultErrorSource.DefaultError(
 					errorSource, ErrorSource.ERROR, fileName, 0,
