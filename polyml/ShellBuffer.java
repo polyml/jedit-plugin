@@ -151,7 +151,7 @@ public final class ShellBuffer extends Object {
 		//dbgMsg("startProcess:started.");
 	}
 
-	public void appendAtPrePrompt(String s) {
+	public synchronized void appendAtPrePrompt(String s) {
 		mOutputBuffer.insertAtBPos(mPos, s);
 	}
 	

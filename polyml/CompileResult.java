@@ -48,24 +48,31 @@ public class CompileResult {
 				if (status == STATUS_SUCCESS){
 					s = i.next().getContent();
 					// convert ML minus to standard minus, so that integer can be parsed. 
-					s.replace('~', '-');
-					finalOffset = Integer.parseInt(s);
+					String s2 = s.replace('~', '-');
+					finalOffset = Integer.parseInt(s2);
 				} else if (status == STATUS_EXCEPTION_RAISED) {
 					s = i.next().getContent();
 					// convert ML minus to standard minus, so that integer can be parsed. 
-					s.replace('~', '-');
-					finalOffset = Integer.parseInt(s);
+					String s2 = s.replace('~', '-');
+					finalOffset = Integer.parseInt(s2);
 					s = i.next().getContent();
 					// FIXME: when Poly Gives back proper exception errors with location, parse them
 					errors.add(new PolyMLError(PolyMLError.KIND_EXCEPTION, 0, 0, s));
-				} else if(status == STATUS_LOAD_FAILED
-						|| status == STATUS_PARSE_FAILED
+				} else if (status == STATUS_LOAD_FAILED) {
+					s = i.next().getContent();
+					// convert ML minus to standard minus, so that integer can be parsed. 
+					String s2 = s.replace('~', '-');
+					finalOffset = Integer.parseInt(s2);
+					s = i.next().getContent();
+					// FIXME: when Poly Gives back proper exception errors with location, parse them
+					errors.add(new PolyMLError(PolyMLError.KIND_HEAP_FAILURE, 0, 0, s));
+				} else if(status == STATUS_PARSE_FAILED
 						|| status == STATUS_TYPECHECK_FAILED) {
 					
 					s = i.next().getContent();
 					// convert ML minus to standard minus, so that integer can be parsed. 
-					s.replace('~', '-');
-					finalOffset = Integer.parseInt(s);
+					String s2 = s.replace('~', '-');
+					finalOffset = Integer.parseInt(s2);
 
 					while (i.hasNext()) {
 						PolyMarkup m2 = i.next();

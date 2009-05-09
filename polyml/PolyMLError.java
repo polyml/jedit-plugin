@@ -7,6 +7,7 @@ import errorlist.ErrorSource;
 
 public class PolyMLError {
 	static char KIND_EXCEPTION = 'X';
+	static char KIND_HEAP_FAILURE = 'L';
 	static char KIND_FATAL = 'E';
 	static char KIND_WARNING = 'W';
 	
@@ -53,6 +54,8 @@ public class PolyMLError {
 			statusString = "Error:";
 		} else if(kind == KIND_WARNING) {
 			statusString = "Warning:";
+		} else if(kind == KIND_HEAP_FAILURE) {
+			statusString = "Heap loading failed:";
 		} else if(kind == KIND_EXCEPTION) {
 			statusString = "Exception:";
 		} else {
@@ -65,6 +68,6 @@ public class PolyMLError {
 	}
 	
 	public boolean isFatal(){
-		return (kind == KIND_FATAL || kind == KIND_EXCEPTION);
+		return (kind == KIND_FATAL || kind == KIND_EXCEPTION || kind == KIND_HEAP_FAILURE);
 	}
 }
