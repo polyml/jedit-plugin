@@ -20,6 +20,7 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.msg.ViewUpdate;
+import org.gjt.sp.jedit.textarea.TextArea;
 
 import pushstream.PushStream;
 import errorlist.DefaultErrorSource;
@@ -122,10 +123,19 @@ public class PolyMLPlugin extends EBPlugin {
 	 * send buffer to ML and process contents
 	 * @param b
 	 */
-	static public void sendBufferToPolyML(Buffer b) {
-		polyMLProcess.compileBuffer(b);
+	static public void sendBufferToPolyML(Buffer b, EditPane e) {
+		polyMLProcess.compileBuffer(b, e);
 	}
 
+	static public void sendCancelToPolyML() {
+		polyMLProcess.cancelCompile();
+	}
+	
+	static public void getProperties(EditPane e) {
+		polyMLProcess.getProperies(e);
+	}
+	
+	
 	static public BufferEditor newDebugShellBuffer() {
 		debugBuffer = new BufferEditor();
 		return debugBuffer;
@@ -152,6 +162,7 @@ public class PolyMLPlugin extends EBPlugin {
 			return null;
 		}
 	}
+
 	
 	
 	static public void processShellBufferToEOF(Buffer b) {

@@ -3,9 +3,19 @@
 <!-- Actions in here corespond to the menu item names in the props file. -->
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
+	<ACTION NAME="polyml-menu.mitem-get_properties">
+		<CODE>
+		polyml.PolyMLPlugin.getProperties(editPane);
+		</CODE>
+	</ACTION>
 	<ACTION NAME="polyml-menu.mitem-process_buffer">
 		<CODE>
-		polyml.PolyMLPlugin.sendBufferToPolyML(buffer);
+		polyml.PolyMLPlugin.sendBufferToPolyML(buffer, editPane);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-cancel">
+		<CODE>
+		polyml.PolyMLPlugin.sendCancelToPolyML();
 		</CODE>
 	</ACTION>
 	<ACTION NAME="polyml-menu.mitem-restart_polyml">

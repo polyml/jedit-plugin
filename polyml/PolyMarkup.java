@@ -25,7 +25,19 @@ public class PolyMarkup implements PushStream<Character> {
 	//public final static int STATUS_INSIDE_ESC_IN_D2 = 9;
 	
 	public final static int STATUS_COMPLETE = 10;
-
+	
+	public final static char INKIND_COMPILE = 'R';
+	public final static char INKIND_PROPERTIES = 'O';
+	public final static char INKIND_TYPE_INFO = 'T';
+	public final static char INKIND_DEC_LOCATION = 'I';
+	public final static char INKIND_MOVE_TO_PARENT = 'U';
+	public final static char INKIND_MOVE_TO_FIRST_CHILD = 'C';
+	public final static char INKIND_MOVE_TO_NEXT = 'N';
+	public final static char INKIND_MOVE_TO_PREVIOUS = 'P';
+	public final static char INKIND_LOC_WHERE_OPENED = 'J';
+	public final static char INKIND_LOC_OF_PARENT_STRUCT = 'J';
+	public final static char OUTKIND_CANCEL = 'K';
+	
 	// status of lazy markup
 	int status;
 
@@ -258,6 +270,12 @@ public class PolyMarkup implements PushStream<Character> {
 			kindString = "_";
 		}
 		return ("<" + kindString + ">" + body + "</" + kindString + ">\n");
+	}
+	
+
+	
+	public static String explicitEscapes(String s) {
+		return s.replace((char)ESC, '`');
 	}
 	
 }

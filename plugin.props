@@ -43,19 +43,18 @@ plugin.polyml.PolyMLPlugin.docs = index.html
 ### plugin setting for menu item.
 plugin.polyml.PolyMLPlugin.menu=\
   polyml-menu.mitem-process_buffer \
+  polyml-menu.mitem-cancel \
   polyml-menu.mitem-restart_polyml \
   polyml-menu.mitem-new_debug_buffer \
   - \
-  polyml-menu.mitem-new \
+  polyml-menu.mitem-get_properties \
   - \
+  polyml-menu.mitem-new \
   polyml-menu.mitem-start \
   polyml-menu.mitem-stop \
   polyml-menu.mitem-restart \
-  - \
   polyml-menu.mitem-stop_all \
-  - \
   polyml-menu.mitem-process_shellbuf_to_eof \
-  - \
   polyml-menu.mitem-prev_command \
   polyml-menu.mitem-next_command
 
@@ -64,17 +63,21 @@ plugin.polyml.PolyMLPlugin.menu=\
 #  polyml-menu.mitem-send_cur_command \
 
 # labels for the menu items
-polyml-menu.mitem-process_buffer.label=Process Whole Buffer
+polyml-menu.mitem-process_buffer.label=Process Buffer in ML
+polyml-menu.mitem-cancel.label=Send Cancel to ML
 polyml-menu.mitem-restart_polyml.label=Restart PolyML
-polyml-menu.mitem-new_debug_buffer.label=New Debug Buffer
+polyml-menu.mitem-new_debug_buffer.label=New ML Debug Buffer
+
+polyml-menu.mitem-get_properties.label=Get properties at cursor/selection
+
 polyml-menu.mitem-new.label=New ShellBuffer
 polyml-menu.mitem-stop_all.label=Stop All ShellBuffer Processes
 polyml-menu.mitem-start.label=Start ShellBuffer
 polyml-menu.mitem-stop.label=Stop ShellBuffer
 polyml-menu.mitem-restart.label=Restart ShellBuffer
-polyml-menu.mitem-process_shellbuf_to_eof.label=Process New Input
-polyml-menu.mitem-prev_command.label=Previous Command
-polyml-menu.mitem-next_command.label=Next Command
+polyml-menu.mitem-process_shellbuf_to_eof.label=Send input from the current shellbuffer
+polyml-menu.mitem-prev_command.label=Previous ShellBuffer Command
+polyml-menu.mitem-next_command.label=Next ShellBuffer Command
 
 #polyml-menu.mitem-send_cur_buffer.label=Send Buffer to ShellBuffer
 #polyml-menu.mitem-send_cur_command.label=Send Line/Command to ShellBuffer

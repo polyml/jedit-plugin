@@ -1,81 +1,96 @@
 package polyml;
 
 import java.io.File;
+import java.util.Iterator;
 
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.gjt.sp.jedit.textarea.Selection;
+import org.gjt.sp.jedit.textarea.TextArea;
 
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
+import polyml.ParseInfo.BufferParseInfo;
 import pushstream.PushStream;
 
 public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 
-	Buffer buffer; 
+	ParseInfo parseInfo;
 	DefaultErrorSource errorSource;
-	String heap;
-	String fileName;
-	
-	public PolyMarkupPushStream(DefaultErrorSource e) {
-		buffer = null;
+
+	public PolyMarkupPushStream(DefaultErrorSource e, ParseInfo p) {
 		errorSource = e;
-	}
-	
-	public synchronized void setCompileInfo(String h, Buffer b) {
-		System.err.println("setCompileInfo");
-		buffer = b;
-		heap = h;
+		parseInfo = p;
 	}
 	
 	public synchronized void add(PolyMarkup m) {
-		if(buffer == null) {
-			System.err.println("PolyMarkupPushStream:add: CompileInfo not setup");
-			return;
-		}
-		
-		fileName = buffer.getPath();
-		CompileResult r = new CompileResult(heap, fileName, m);
-		
-		errorSource.removeFileErrors(fileName);
-		if(r.isBug()) {
-			errorSource.addError(new DefaultErrorSource.DefaultError(
-					errorSource, ErrorSource.ERROR, fileName, 0,
-					0, 0, "BUG: Failed to check using PolyML."));
-		} else {
-			if(r.status == CompileResult.STATUS_LOAD_FAILED) {
+		if(m.kind == PolyMarkup.INKIND_COMPILE) {
+			CompileResult r = new CompileResult(m);
+			
+			BufferParseInfo i = parseInfo.parseComplete(r);
+			
+			String fileName = i.buffer.getPath();
+			Buffer buffer = i.buffer;
+			
+			errorSource.removeFileErrors(fileName);
+			if(r.isBug()) {
 				errorSource.addError(new DefaultErrorSource.DefaultError(
 						errorSource, ErrorSource.ERROR, fileName, 0,
-						0, 0, "Failed to load heap: '" + r.heapName + "'"));
-			}
-			
-			if(r.heapName == null) {
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.WARNING, fileName, 0,
-						0, 0, "No heap file found."));
-			}
-			
-			for (PolyMLError e : r.errors) {
-				
-				System.err.println("PolyMarkupPushStream: " + e.startPos + ":" + e.endPos);
-				
-				int line = buffer.getLineOfOffset(e.startPos);
-				int line_offset = e.startPos - buffer.getLineStartOffset(line);
-				int end_line = buffer.getLineOfOffset(e.endPos);
-				int end_offset = 0;
-				if (end_line == line) {
-					end_offset = e.endPos - buffer.getLineStartOffset(end_line);
+						0, 0, "BUG: Failed to check using PolyML."));
+			} else {
+				for (PolyMLError e : r.errors) {
+					
+					System.err.println("PolyMarkupPushStream: " + e.startPos + ":" + e.endPos);
+					
+					int line = buffer.getLineOfOffset(e.startPos);
+					int line_offset = e.startPos - buffer.getLineStartOffset(line);
+					int end_line = buffer.getLineOfOffset(e.endPos);
+					int end_offset = 0;
+					if (end_line == line) {
+						end_offset = e.endPos - buffer.getLineStartOffset(end_line);
+					}
+					
+					int errorKind;
+					if(e.kind == PolyMLError.KIND_FATAL || e.kind == PolyMLError.KIND_EXCEPTION){
+						errorKind = ErrorSource.ERROR;
+					} else {
+						errorKind = ErrorSource.WARNING;
+					}
+					
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, errorKind, fileName, line,
+							line_offset, end_offset, e.message));
 				}
-				
-				int errorKind;
-				if(e.kind == PolyMLError.KIND_FATAL){
-					errorKind = ErrorSource.ERROR;
-				} else {
-					errorKind = ErrorSource.WARNING;
-				}
-				
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, errorKind, fileName, line,
-						line_offset, end_offset, e.message));
 			}
+		} else if(m.kind == PolyMarkup.INKIND_DEC_LOCATION) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_LOC_WHERE_OPENED) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_NEXT) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PARENT) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PREVIOUS) {
+			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_PROPERTIES) {
+			Iterator<PolyMarkup> i = m.getSubs().iterator();
+			@SuppressWarnings("unused")
+			String request_id = i.next().getContent();
+			String parse_id = i.next().getContent();
+			int start = Integer.parseInt(i.next().getContent());
+			int end = Integer.parseInt(i.next().getContent());
+			
+			BufferParseInfo pInfo = parseInfo.getFromParseID(parse_id);
+			
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(start,end));
+			//System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_TYPE_INFO) {
+			
 		}
 	}
 
