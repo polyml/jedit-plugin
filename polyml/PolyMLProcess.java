@@ -34,8 +34,9 @@ import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 
 public class PolyMLProcess {
-	static final char ESC = 0x1b;
+	static final char ESC_CHAR = 0x1b;
 	static final char EOT = 0x04;
+	static final String ESC = Character.toString(ESC_CHAR);
 	static final String ESC_COMMA = ESC + ",";
 	static final String ESC_START = ESC + "R";
 	static final String ESC_END = ESC + "r";
@@ -49,6 +50,8 @@ public class PolyMLProcess {
 	InputStreamThread polyListener;
 	DefaultErrorSource errorSource;
 	PolyMarkupPushStream errorPushStream;
+	
+	List<String> polyProcessCmd;
 
 	// String lastParseID;
 	// Buffer lastParsedBuffer;
@@ -66,9 +69,11 @@ public class PolyMLProcess {
 		errorPushStream = null;
 
 		parseInfo = new ParseInfo();
+		
+		polyProcessCmd = cmd;
 		// lastParseID = null;
 		// lastParsedBuffer = null;
-		restartProcessFromCmd(cmd);
+		restartProcess();
 	}
 
 	// -
@@ -81,12 +86,18 @@ public class PolyMLProcess {
 		polyListener = null;
 		errorPushStream = null;
 		parseInfo = new ParseInfo();
-		List<String> cmd = new LinkedList<String>();
-		cmd.add("poly");
-		cmd.add("--ideprotocol --with-markup");
-		restartProcessFromCmd(cmd);
+		polyProcessCmd = new LinkedList<String>();
+		polyProcessCmd.add("poly");
+		polyProcessCmd.add("--ideprotocol --with-markup");
+		restartProcess();
 	}
 
+
+	public void setCmd(List<String> polyIDECmd) {
+		polyProcessCmd = polyIDECmd;
+	}
+
+	
 	/**
 	 * sub class that can be called by other threads to add a string to the
 	 * debug buffer
@@ -118,16 +129,16 @@ public class PolyMLProcess {
 	 * @param cmd
 	 * @throws IOException
 	 */
-	public synchronized void restartProcessFromCmd(List<String> cmd)
+	public synchronized void restartProcess()
 			throws IOException {
 		closeProcess();
 
-		System.err.println("restartProcessFromCmd:" + cmd);
+		System.err.println("restartProcessFromCmd:" + polyProcessCmd);
 
-		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessBuilder pb = new ProcessBuilder(polyProcessCmd);
 		pb.redirectErrorStream(true);
 		try {
-			System.err.println("PolyMLProcess:" + "start called: " + cmd);
+			System.err.println("PolyMLProcess:" + "start called: " + polyProcessCmd);
 			process = pb.start();
 
 			reader = new DataInputStream(process.getInputStream());
@@ -144,7 +155,7 @@ public class PolyMLProcess {
 
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
-					+ cmd);
+					+ polyProcessCmd);
 			process = null;
 			throw e;
 		}
@@ -200,11 +211,8 @@ public class PolyMLProcess {
 		return Integer.toString(offsets[0]) + ESC_COMMA + Integer.toString(offsets[1]);
 	}
 
-	/**
-	 * get properties of current selection/cursor in the text area
-	 */
-	public void getProperies(EditPane p) {
-
+	
+	public void makePolyQuery(EditPane p, char c) {
 		String lastParseID = parseInfo.getFromBuffer(p.getBuffer()).lastParseID;
 
 		if (lastParseID == null) {
@@ -212,15 +220,57 @@ public class PolyMLProcess {
 			return;
 		}
 		
-		String requestid = "aaa";
-		String cmd = ESC + "O" + requestid + ESC_COMMA + lastParseID
-				+ ESC_COMMA + getOffsetsString(p) + ESC + "o";
+		String requestid = "";
+		String cmd = ESC + Character.toString(c) + requestid + ESC_COMMA + lastParseID
+				+ ESC_COMMA + getOffsetsString(p) + ESC
+				+ Character.toString(Character.toLowerCase(c));
 		
-		System.err.println("getProperies: cmd: " + PolyMarkup.explicitEscapes(cmd) + "");
-		
+		System.err.println("makePolyQuery: " + PolyMarkup.explicitEscapes(cmd));
 		sendToPoly(cmd);
 	}
+	
+	/**
+	 * get properties, type etc, of current selection/cursor in the text area
+	 */
+	public void sendGetProperies(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_PROPERTIES);
+	}
 
+	public void sendGetType(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_TYPE_INFO);
+	}
+
+	
+	public void sendMoveToParent(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PARENT);
+	}
+	
+	public void sendMoveToFirstChild(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD);
+	}
+	
+	public void sendMoveToNext(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_NEXT);
+	}
+	
+	public void sendMoveToPrevious(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PREVIOUS);
+	}
+	
+
+	public void sendLocationOfParentStructure(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT);
+	}
+	public void sendLocationDeclared(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_LOC_DECLARED);
+	}
+	public void sendLocationOpened(EditPane p) {
+		makePolyQuery(p, PolyMarkup.INKIND_LOC_WHERE_OPENED);
+	}
+	
+	
+	
+	
 	/**
 	 */
 	public void cancelCompile() {
@@ -366,22 +416,25 @@ public class PolyMLProcess {
 	 * @param command
 	 */
 	public synchronized void sendToPoly(String command) {
-		boolean unExpectedExit;
-
-		if (process == null) {
-			unExpectedExit = false;
-		} else {
+		
+		//System.err.println("makePolyQuery: " + PolyMarkup.explicitEscapes(command));
+		
+		// if process variable is not null, we should be running, check this
+		if (process != null) {
 			try {
 				int i = process.exitValue();
-				unExpectedExit = true;
-				System.err.println("PolyML unexpectidly quit: " + i);
-				closeProcess();
+				System.err.println("PolyML unexpectidly quit with value:" + i + "; trying to restart" );
+				restartProcess();
 			} catch (IllegalThreadStateException e) {
-				unExpectedExit = false;
+				// do nothing; process is still running fine
+			} catch (IOException e) {
+				System.err.println("PolyML restart failed." );
+				e.printStackTrace();
 			}
 		}
 
-		if (writer != null && process != null && unExpectedExit == false) {
+		// make sure output and process are not null: we are running correctly
+		if (writer != null && process != null) {
 			try {
 				writer.writeBytes(command);
 				writer.flush();

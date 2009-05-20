@@ -29,7 +29,7 @@ public class PolyMarkup implements PushStream<Character> {
 	public final static char INKIND_COMPILE = 'R';
 	public final static char INKIND_PROPERTIES = 'O';
 	public final static char INKIND_TYPE_INFO = 'T';
-	public final static char INKIND_DEC_LOCATION = 'I';
+	public final static char INKIND_LOC_DECLARED = 'I';
 	public final static char INKIND_MOVE_TO_PARENT = 'U';
 	public final static char INKIND_MOVE_TO_FIRST_CHILD = 'C';
 	public final static char INKIND_MOVE_TO_NEXT = 'N';
@@ -176,7 +176,7 @@ public class PolyMarkup implements PushStream<Character> {
 						status = STATUS_COMPLETE;
 						// push on completed markup to markup stream
 						//System.err.println("addChar: status complete!: " + cur.toXMLString());
-						PolyMLPlugin.debugBuffer.append(cur.toXMLString());
+						//PolyMLPlugin.debugBuffer.append(cur.toPrettyString());
 						markupStream.add(cur);
 						// if we close the last tag, we have completed parsing!
 						resetMarkup();
@@ -249,6 +249,33 @@ public class PolyMarkup implements PushStream<Character> {
 		return (ESC + Character.toUpperCase(k) + body + ESC + Character.toLowerCase(k));
 	}
 	
+
+	public String toPrettyString() {
+		String body = new String();
+		boolean hasPrev = false;
+		if(content != null) { body += content; hasPrev = true; }
+		if(fields != null) { 
+			Iterator<PolyMarkup> i = fields.iterator();
+			while(i.hasNext()) {
+				if(hasPrev){ body += ("`,");} 
+				body += i.next().toPrettyString();
+				hasPrev = true;
+			}
+		}
+		
+		String startKindString;
+		String endKindString;
+
+		if(kind != null){
+			startKindString = Character.toString(Character.toUpperCase(kind));
+			endKindString = Character.toString(Character.toLowerCase(kind));
+		} else {
+			endKindString = "_";
+			startKindString = "_";
+		}
+		return ("`" + startKindString + body + "`" + endKindString + "\n");
+	}
+	
 	
 	public String toXMLString() {
 		String body = new String();
@@ -258,7 +285,7 @@ public class PolyMarkup implements PushStream<Character> {
 			Iterator<PolyMarkup> i = fields.iterator();
 			while(i.hasNext()) {
 				if(hasPrev){ body += ("<,/>\n");} 
-				body += i.next().toXMLString();
+				body += i.next().toPrettyString();
 				hasPrev = true;
 			}
 		}

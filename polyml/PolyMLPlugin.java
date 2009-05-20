@@ -104,11 +104,11 @@ public class PolyMLPlugin extends EBPlugin {
 	static public boolean restartPolyML() {
 		System.err.println("restarting polyml...");
 		try { 
-			List<String> cmd = getPolyIDECmd();
 			if(polyMLProcess == null) { 
-				polyMLProcess = new PolyMLProcess(cmd, errorSource);
+				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
 			} else {
-				polyMLProcess.restartProcessFromCmd(cmd);
+				polyMLProcess.setCmd(getPolyIDECmd());
+				polyMLProcess.restartProcess();
 			}
 			return true;
 		} catch (IOException e) {
@@ -127,15 +127,61 @@ public class PolyMLPlugin extends EBPlugin {
 		polyMLProcess.compileBuffer(b, e);
 	}
 
+	/** 
+	 * Cancel a compilation
+	 * @param b
+	 */
 	static public void sendCancelToPolyML() {
 		polyMLProcess.cancelCompile();
 	}
 	
-	static public void getProperties(EditPane e) {
-		polyMLProcess.getProperies(e);
+	/** 
+	 * get possible operations
+	 * @param b
+	 */
+	static public void sendGetProperies(EditPane e) {
+		polyMLProcess.sendGetProperies(e);
+	}
+	static public void sendGetType(EditPane e) {
+		polyMLProcess.sendGetType(e);
+	}
+	
+	/** 
+	 * Location requests
+	 * @param b
+	 */
+	static public void sendLocationDeclared(EditPane e) {
+		polyMLProcess.sendLocationDeclared(e);
+	}
+	static public void sendLocationOpened(EditPane e) {
+		polyMLProcess.sendLocationOpened(e);
+	}
+	static public void sendLocationOfParentStructure(EditPane e) {
+		polyMLProcess.sendLocationOfParentStructure(e);
+	}
+	
+	/** 
+	 * Moving around parse tree
+	 * @param b
+	 */
+	static public void sendMoveToParent(EditPane e) {
+		polyMLProcess.sendMoveToParent(e);
+	}
+	static public void sendMoveToFirstChild(EditPane e) {
+		polyMLProcess.sendMoveToFirstChild(e);
+	}
+	static public void sendMoveToNext(EditPane e) {
+		polyMLProcess.sendMoveToNext(e);
+	}
+	static public void sendMoveToPrevious(EditPane e) {
+		polyMLProcess.sendMoveToPrevious(e);
 	}
 	
 	
+	/**
+	 * 
+	 * @return
+	 */
 	static public BufferEditor newDebugShellBuffer() {
 		debugBuffer = new BufferEditor();
 		return debugBuffer;

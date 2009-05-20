@@ -48,6 +48,16 @@ plugin.polyml.PolyMLPlugin.menu=\
   polyml-menu.mitem-new_debug_buffer \
   - \
   polyml-menu.mitem-get_properties \
+  polyml-menu.mitem-get_type \
+  - \
+  polyml-menu.mitem-move_to_parent \
+  polyml-menu.mitem-move_to_child \
+  polyml-menu.mitem-move_to_next \
+  polyml-menu.mitem-move_to_previous \
+  - \
+  polyml-menu.mitem-location_opened \
+  polyml-menu.mitem-location_of_parent_structure \
+  polyml-menu.mitem-location_declared \
   - \
   polyml-menu.mitem-new \
   polyml-menu.mitem-start \
@@ -69,6 +79,16 @@ polyml-menu.mitem-restart_polyml.label=Restart PolyML
 polyml-menu.mitem-new_debug_buffer.label=New ML Debug Buffer
 
 polyml-menu.mitem-get_properties.label=Get properties at cursor/selection
+polyml-menu.mitem-get_type.label=Get type at cursor/selection
+
+polyml-menu.mitem-move_to_parent.label=Move to parent
+polyml-menu.mitem-move_to_child.label=Move to child
+polyml-menu.mitem-move_to_next.label=Move to next
+polyml-menu.mitem-move_to_previous.label=Move to previous
+
+polyml-menu.mitem-location_opened.label=Location opened
+polyml-menu.mitem-location_of_parent_structure.label=Location of parent structure
+polyml-menu.mitem-location_declared.label=Location declared
 
 polyml-menu.mitem-new.label=New ShellBuffer
 polyml-menu.mitem-stop_all.label=Stop All ShellBuffer Processes

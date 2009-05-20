@@ -24,6 +24,44 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		parseInfo = p;
 	}
 	
+	/**
+	 * create initial location response from PolyMarkup
+	 */
+	class LocationResponse {
+		String parseID;
+		String reqID;
+		int start;
+		int end;
+		Iterator<PolyMarkup> markup;
+		
+		public LocationResponse(PolyMarkup m){
+			markup = m.getSubs().iterator();
+			reqID = markup.next().getContent();
+			parseID = markup.next().getContent();
+			start = Integer.parseInt(markup.next().getContent());
+			end = Integer.parseInt(markup.next().getContent());
+		}
+	}
+	
+	/**
+	 * initial location followed by a file and a location in that file. 
+	 */
+	class FullLocationResponse extends LocationResponse {
+		
+		String filenameLoc;
+		int lineLoc; 
+		int startLoc;
+		int endLoc;
+		
+		public FullLocationResponse(PolyMarkup m){
+			super(m);
+			filenameLoc = markup.next().getContent();
+			lineLoc = Integer.parseInt(markup.next().getContent());
+			startLoc = Integer.parseInt(markup.next().getContent());
+			endLoc = Integer.parseInt(markup.next().getContent());
+		}
+	}
+	
 	public synchronized void add(PolyMarkup m) {
 		if(m.kind == PolyMarkup.INKIND_COMPILE) {
 			CompileResult r = new CompileResult(m);
@@ -63,35 +101,55 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 							line_offset, end_offset, e.message));
 				}
 			}
-		} else if(m.kind == PolyMarkup.INKIND_DEC_LOCATION) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
-		} else if(m.kind == PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
-		} else if(m.kind == PolyMarkup.INKIND_LOC_WHERE_OPENED) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_NEXT) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PARENT) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PREVIOUS) {
-			System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
 		} else if(m.kind == PolyMarkup.INKIND_PROPERTIES) {
-			Iterator<PolyMarkup> i = m.getSubs().iterator();
-			@SuppressWarnings("unused")
-			String request_id = i.next().getContent();
-			String parse_id = i.next().getContent();
-			int start = Integer.parseInt(i.next().getContent());
-			int end = Integer.parseInt(i.next().getContent());
-			
-			BufferParseInfo pInfo = parseInfo.getFromParseID(parse_id);
-			
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(start,end));
-			//System.err.println("PolyMarkupPushStream.add: Not yet implemented kind: " + m.kind);
+			LocationResponse l = new LocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
 		} else if(m.kind == PolyMarkup.INKIND_TYPE_INFO) {
-			
-		}
+			LocationResponse l = new LocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			// FIXME: complete. 
+			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+		} 
+		// Location responses
+		else if(m.kind == PolyMarkup.INKIND_LOC_DECLARED) {
+			LocationResponse l = new FullLocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			// FIXME: complete. 
+			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT) {
+			LocationResponse l = new FullLocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			// FIXME: complete. 
+			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+		} else if(m.kind == PolyMarkup.INKIND_LOC_WHERE_OPENED) {
+			LocationResponse l = new FullLocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			// FIXME: complete. 
+			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+		} 
+		// movement responses (all the same)
+		else if(m.kind == PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD) {
+			LocationResponse l = new LocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_NEXT) {
+			LocationResponse l = new LocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PARENT) {
+			LocationResponse l = new LocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PREVIOUS) {
+			LocationResponse l = new LocationResponse(m);
+			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+		} 
 	}
 
 	public void add(PolyMarkup c, boolean isMore) { add(c); }

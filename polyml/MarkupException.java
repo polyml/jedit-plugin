@@ -24,7 +24,7 @@ public class MarkupException extends Exception {
 	// hacky print thing for debugging
 	public void printMarkupException(){
 		if(markup != null) {
-			System.err.println("MarkupException: got to: \n " + markup.toXMLString());
+			System.err.println("MarkupException: got to: \n " + markup.toPrettyString());
 		}
 		if(ch != null) {
 			System.err.println("MarkupException: ch: " + ch);
