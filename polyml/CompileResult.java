@@ -136,5 +136,9 @@ public class CompileResult {
 		
 		return s;
 	}
+
+	public boolean isSuccess() {
+		return (status == STATUS_SUCCESS);
+	}
 }
 	

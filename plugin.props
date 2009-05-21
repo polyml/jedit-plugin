@@ -26,7 +26,7 @@ plugin.polyml.PolyMLPlugin.activate = defer
 # This name is used for the menu associated with this plugin, also used by 
 # jEdit to work out the main class associated with this plugin 
 # (jedit appends "Plugin" to this to get the main class)
-plugin.polyml.PolyMLPlugin.name = PolyML Plugin
+plugin.polyml.PolyMLPlugin.name=PolyML-Plugin
 
 # Other stuff for jEdit
 plugin.polyml.PolyMLPlugin.author = Lucas Dixon

@@ -13,18 +13,21 @@ public class ParseInfo {
 	 */
 	Map<String, BufferParseInfo> locMap;
 	Map<String, BufferParseInfo> parseMap;
+	String lastRequestID;
+	Thread waitingThread;
 	
 	/**
 	 * Parse Info for a single buffer
 	 * @author ldixon
 	 */
 	public class BufferParseInfo {
-		Buffer buffer; // buffer
-		EditPane editPane; // edit pane containing buffer; or null if buffer is not in an edit pane.
+		//Buffer buffer; // buffer
+		//EditPane editPane; // edit pane containing buffer; or null if buffer is not in an edit pane.
 		String sentParseID; // id of current version of buffer sent for compilation
 		String lastParseID; // id of last parsed version of the buffer, same as curParseID if currently parsed
 		String prevParseID; // id of previous parsed entry; so we can remove it from table when redundent
 		CompileResult r; // last compile result
+		String fileName;
 		
 		/**
 		 * Create a new parse info for a buffer in an edit pane. 
@@ -34,9 +37,11 @@ public class ParseInfo {
 		 * @param p 
 		 * @param pid id for this version of the parse
 		 */
-		public BufferParseInfo(Buffer b, EditPane p, String pid) {
-			buffer = b;
-			editPane = p;
+		public BufferParseInfo(String f, String pid) {
+		//public BufferParseInfo(Buffer b, EditPane p, String pid) {
+			//buffer = b;
+			//editPane = p;
+			fileName = f;
 			sentParseID = pid;
 			lastParseID = null;
 			prevParseID = null;
@@ -48,24 +53,41 @@ public class ParseInfo {
 	public ParseInfo(){
 		locMap = new Hashtable<String, BufferParseInfo>();
 		parseMap = new Hashtable<String, BufferParseInfo>();
+		waitingThread = null;
+		lastRequestID = null;
 	}
 
+	public synchronized String getLastCompileRequestID(){
+		return lastRequestID;
+	}
+	
 	/**
 	 * called when a buffer is sent ot be parsed
 	 * @param b
 	 * @param e
 	 * @param rid
 	 */
-	public synchronized void parsingBuffer(Buffer b, EditPane e, String rid) {
-		BufferParseInfo i = locMap.get(b.getPath());
+	public synchronized void parsingBuffer(String fileName, String rid) {
+		// Buffer b, EditPane e,
+		lastRequestID = rid;
+		//BufferParseInfo i = locMap.get(b.getPath());
+		BufferParseInfo i = locMap.get(fileName);
 		if(i == null){
-			i = new BufferParseInfo(b, e, rid);
-			locMap.put(i.buffer.getPath(), i);
+			i = new BufferParseInfo(fileName, rid);
+			//locMap.put(i.buffer.getPath(), i);
+			locMap.put(fileName, i);
 		} else {
 			i.sentParseID = rid;
-			i.editPane = e;
+			//i.editPane = e;
 		}
 		parseMap.put(i.sentParseID, i);
+	}
+	
+	synchronized void wakeSleepingThread() {
+		if(waitingThread != null) {
+			waitingThread.notify();
+			waitingThread = null;
+		}
 	}
 	
 	/**
@@ -74,9 +96,14 @@ public class ParseInfo {
 	 * @return
 	 */
 	public synchronized BufferParseInfo parseComplete(CompileResult r) {
+		if(r.requestID.equals(lastRequestID)) {
+			wakeSleepingThread();
+			lastRequestID = null;
+		}
 		BufferParseInfo i = parseMap.get(r.requestID);
 		if(i == null){
 			System.err.println("parsedBuffer: no such known buffer for compile result: " + r.stringOfResult());
+			wakeSleepingThread();
 			return null;
 		} else {
 			i.r = r;
@@ -98,6 +125,7 @@ public class ParseInfo {
 		}
 	}
 
+	/* */
 	public synchronized BufferParseInfo getFromPath(String path) {
 		return locMap.get(path);
 	}
@@ -112,6 +140,22 @@ public class ParseInfo {
 	public synchronized void deleteAll() {
 		locMap.clear();
 		parseMap.clear();
+	}
+
+	/* */
+	public String parseIDOfBuffer(Buffer buffer) {
+		BufferParseInfo pInfo = getFromBuffer(buffer);
+		if(pInfo != null){
+			return pInfo.lastParseID;
+		} else {
+			return null;
+		}
+	}
+
+	/* IMPROVE: lastRequestID gets set by both compile and by this */
+	public void notifyOnCompileResult(String requestid, Thread currentThread) {
+		lastRequestID = requestid;
+		waitingThread = currentThread;
 	}
 	
 }

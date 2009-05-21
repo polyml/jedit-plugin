@@ -41,6 +41,16 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			start = Integer.parseInt(markup.next().getContent());
 			end = Integer.parseInt(markup.next().getContent());
 		}
+		
+		public String getSrcTextOfBuffer(Buffer srcBuffer) {
+			return srcBuffer.getText(start, end - start);
+		}
+		
+		public String getSrcText() {
+			BufferParseInfo pInfo = parseInfo.getFromParseID(parseID);
+			Buffer buffer = jEdit.getBuffer(pInfo.fileName);
+			return getSrcTextOfBuffer(buffer);
+		}
 	}
 	
 	/**
@@ -55,10 +65,58 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		
 		public FullLocationResponse(PolyMarkup m){
 			super(m);
-			filenameLoc = markup.next().getContent();
-			lineLoc = Integer.parseInt(markup.next().getContent());
-			startLoc = Integer.parseInt(markup.next().getContent());
-			endLoc = Integer.parseInt(markup.next().getContent());
+			if(markup.hasNext()) {
+				filenameLoc = markup.next().getContent();
+				lineLoc = Integer.parseInt(markup.next().getContent());
+				startLoc = Integer.parseInt(markup.next().getContent());
+				endLoc = Integer.parseInt(markup.next().getContent());
+			} else { // we get back null filename if not such remote location
+				filenameLoc = null;
+				lineLoc = 0;
+				startLoc = 0;
+				endLoc = 0;
+			}
+		}
+		
+		public boolean locExists() {
+			return (filenameLoc != null);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param l
+	 */
+	void noteLocation(FullLocationResponse l) {
+		BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+		Buffer srcBuffer = jEdit.getBuffer(pInfo.fileName);
+		//Buffer srcBuffer = pInfo.editPane.getBuffer();
+		
+		if(l.locExists()) {
+			Buffer locBuffer = jEdit.getBuffer(l.filenameLoc);
+			int line = locBuffer.getLineOfOffset(l.startLoc);
+			int line_offset = l.startLoc - locBuffer.getLineStartOffset(line);
+			int end_line = locBuffer.getLineOfOffset(l.endLoc);
+			int end_offset = 0;
+			if (end_line == line) {
+				end_offset = l.endLoc - locBuffer.getLineStartOffset(end_line);
+			}
+			
+			errorSource.addError(new DefaultErrorSource.DefaultError(
+					errorSource, ErrorSource.WARNING, locBuffer.getPath(), line,
+					line_offset, end_offset, "Location of: `" + l.getSrcTextOfBuffer(srcBuffer) + "`" ));
+		} else {
+			int line = srcBuffer.getLineOfOffset(l.start);
+			int line_offset = l.start - srcBuffer.getLineStartOffset(line);
+			int end_line = srcBuffer.getLineOfOffset(l.end);
+			int end_offset = 0;
+			if (end_line == line) {
+				end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
+			}
+			
+			errorSource.addError(new DefaultErrorSource.DefaultError(
+					errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
+					line_offset, end_offset, "No decloration for: `" + l.getSrcTextOfBuffer(srcBuffer) + "`" ));
 		}
 	}
 	
@@ -71,8 +129,10 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			
 			BufferParseInfo i = parseInfo.parseComplete(r);
 			
-			String fileName = i.buffer.getPath();
-			Buffer buffer = i.buffer;
+			String fileName = i.fileName;
+			Buffer buffer = jEdit.getBuffer(i.fileName);
+			//String fileName = i.buffer.getPath();
+			//Buffer buffer = i.buffer;
 			
 			errorSource.removeFileErrors(fileName);
 			if(r.isBug()) {
@@ -107,67 +167,62 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		} else if(m.kind == PolyMarkup.INKIND_PROPERTIES) {
 			LocationResponse l = new LocationResponse(m);
 			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			
+			// FIXME: synchronisation issue between getting buffer path and selecting right area in it
+			if(jEdit.getActiveView().getBuffer().getPath() == pInfo.fileName) {
+				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			}
 		} else if(m.kind == PolyMarkup.INKIND_TYPE_INFO) {
 			LocationResponse l = new LocationResponse(m);
 			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			String type_string = l.markup.next().getContent();
 			
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-			
-			Buffer buffer = pInfo.editPane.getBuffer();
-			int line = buffer.getLineOfOffset(l.start);
-			int line_offset = l.start - buffer.getLineStartOffset(line);
-			int end_line = buffer.getLineOfOffset(l.end);
-			int end_offset = 0;
-			if (end_line == line) {
-				end_offset = l.end - buffer.getLineStartOffset(end_line);
+			if(jEdit.getActiveView().getBuffer().getPath() == pInfo.fileName) {
+				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
+				Buffer srcBuffer = jEdit.getActiveView().getBuffer();
+				int line = srcBuffer.getLineOfOffset(l.start);
+				int line_offset = l.start - srcBuffer.getLineStartOffset(line);
+				int end_line = srcBuffer.getLineOfOffset(l.end);
+				int end_offset = 0;
+				if (end_line == line) {
+					end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
+				}
+				
+				if(l.markup.hasNext()) {
+					String type_string = l.markup.next().getContent();
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
+							line_offset, end_offset, "`" + type_string + "` is the type of: `" 
+							+ l.getSrcTextOfBuffer(srcBuffer) + "`"));
+				} else {
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
+							line_offset, end_offset, "Not a value, so no type: `" 
+							+ l.getSrcTextOfBuffer(srcBuffer) + "`"));
+				}
 			}
-			
-			errorSource.addError(new DefaultErrorSource.DefaultError(
-					errorSource, ErrorSource.WARNING, buffer.getPath(), line,
-					line_offset, end_offset, type_string));
-			
-			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
 		} 
 		// Location responses
 		else if(m.kind == PolyMarkup.INKIND_LOC_DECLARED) {
-			LocationResponse l = new FullLocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-			// FIXME: complete. 
-			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+			FullLocationResponse l = new FullLocationResponse(m);
+			noteLocation(l);
 		} else if(m.kind == PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT) {
-			LocationResponse l = new FullLocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-			// FIXME: complete. 
-			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+			FullLocationResponse l = new FullLocationResponse(m);
+			noteLocation(l);
 		} else if(m.kind == PolyMarkup.INKIND_LOC_WHERE_OPENED) {
-			LocationResponse l = new FullLocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-			// FIXME: complete. 
-			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
+			FullLocationResponse l = new FullLocationResponse(m);
+			noteLocation(l);
 		} 
 		// movement responses (all the same)
-		else if(m.kind == PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD) {
+		else if(m.kind == PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD 
+				|| m.kind == PolyMarkup.INKIND_MOVE_TO_NEXT
+				|| m.kind == PolyMarkup.INKIND_MOVE_TO_PARENT
+				|| m.kind == PolyMarkup.INKIND_MOVE_TO_PREVIOUS) {
 			LocationResponse l = new LocationResponse(m);
 			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_NEXT) {
-			LocationResponse l = new LocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PARENT) {
-			LocationResponse l = new LocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-		} else if(m.kind == PolyMarkup.INKIND_MOVE_TO_PREVIOUS) {
-			LocationResponse l = new LocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-		} 
+			if(jEdit.getActiveView().getBuffer().getPath() == pInfo.fileName) {
+				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			}
+		}
 	}
 
 	public void add(PolyMarkup c, boolean isMore) { add(c); }

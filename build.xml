@@ -49,6 +49,7 @@
 			<fileset dir="${src.dir}">
 				<include name="**/*.props"/>
 				<include name="**/*.xml"/>
+        <include name="**/*.sml"/>
 				<exclude name="**/build.xml"/>
 				<include name="**/*.html"/>
 				<include name="**/*.gif"/>

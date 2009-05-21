@@ -42,22 +42,22 @@ public class PolyMLProcess {
 	static final String ESC_END = ESC + "r";
 	static final String POLY_SAVE_DIR = ".polysave";
 
-	Process process;
 
-	DataOutputStream writer;
-	DataInputStream reader;
+	List<String> polyProcessCmd; // polyML command
+	Process process; // the polyML Process
+	DataOutputStream writer; // basic writing to polyML
+	DataInputStream reader; // basic reading from polyML
 
-	InputStreamThread polyListener;
-	DefaultErrorSource errorSource;
-	PolyMarkupPushStream errorPushStream;
+	InputStreamThread polyListener; // thread that listens to polyML
+	PolyMarkupPushStream errorPushStream; // listens to PolyML and deals with markup.
 	
-	List<String> polyProcessCmd;
+	DefaultErrorSource errorSource; // jEdit error list
 	
-	int msgID; 
+	File ideHeapFile;
+	int msgID; // counter for messages sent to poly
 
-	// String lastParseID;
-	// Buffer lastParsedBuffer;
-	ParseInfo parseInfo;
+	// all known parse query statuses, and last compile request ID
+	ParseInfo parseInfo; 
 
 	// -
 	public PolyMLProcess(List<String> cmd, DefaultErrorSource err)
@@ -65,6 +65,7 @@ public class PolyMLProcess {
 		super();
 		msgID = 0;
 		errorSource = err;
+		ideHeapFile = null;
 		process = null;
 		writer = null;
 		reader = null;
@@ -83,6 +84,7 @@ public class PolyMLProcess {
 		super();
 		msgID = 0;
 		errorSource = err;
+		ideHeapFile = null;
 		process = null;
 		writer = null;
 		reader = null;
@@ -100,6 +102,9 @@ public class PolyMLProcess {
 		polyProcessCmd = polyIDECmd;
 	}
 
+	public void setIDEHeap(File f) {
+		ideHeapFile = f;
+	}
 	
 	/**
 	 * sub class that can be called by other threads to add a string to the
@@ -217,7 +222,7 @@ public class PolyMLProcess {
 
 	
 	public void makePolyQuery(EditPane p, char c) {
-		String lastParseID = parseInfo.getFromBuffer(p.getBuffer()).lastParseID;
+		String lastParseID = parseInfo.parseIDOfBuffer(p.getBuffer());
 
 		if (lastParseID == null) {
 			System.err.println("PolyMLProcess:makePolyQuery: no last parse ID");
@@ -272,16 +277,20 @@ public class PolyMLProcess {
 		makePolyQuery(p, PolyMarkup.INKIND_LOC_WHERE_OPENED);
 	}
 	
-	
-	
-	
 	/**
 	 */
-	public void cancelCompile() {
-		String requestid = "a";
-		String compile_cmd = ESC + "K" + requestid + ESC + "k";
+	public synchronized void cancelCompile(String requestID) {
+		String compile_cmd = ESC + "K" + requestID + ESC + "k";
 		sendToPoly(compile_cmd);
 	}
+	
+	public synchronized void cancelLastCompile() {
+		String lastRequestID = parseInfo.getLastCompileRequestID();
+		if(lastRequestID != null) {
+			cancelCompile(lastRequestID);
+		}
+	}
+
 
 	/**
 	 * WARNING: this does not set the parseInfo - this needs to be done, and is
@@ -292,17 +301,45 @@ public class PolyMLProcess {
 	 * @param startPos
 	 * @param src
 	 */
-	void compile(String requestid, String prelude, String srcFileName, String src) {
+	synchronized void compile(String requestid, String prelude, String srcFileName, String src) {
+		String lastRequestID = parseInfo.getLastCompileRequestID();
+		if(lastRequestID != null) {
+			cancelCompile(lastRequestID);
+		}
+		
+		parseInfo.parsingBuffer(srcFileName, requestid);
+		
+		lastRequestID = requestid;
 		String compile_cmd = ESC_START + requestid + ESC_COMMA + srcFileName
 				+ ESC_COMMA + "0" + ESC_COMMA + prelude.length() + ESC_COMMA
 				+ src.length() + ESC_COMMA + prelude + ESC_COMMA + src
 				+ ESC_END;
 
-		// System.err.println("CompileCmd: '" + compile_cmd + "';");
+		//System.err.println("CompileCmd: '" + compile_cmd + "';");
 
 		sendToPoly(compile_cmd);
 	}
-
+	
+	
+	public synchronized void compile(String prelude, String srcFileName, String src) {
+		String requestid = Integer.toString(msgID++);
+		compile(requestid, prelude, srcFileName, src);
+	}
+	
+	
+	public void sync_compile(String prelude, String srcFileName, String src) {
+		String requestid = Integer.toString(msgID++);
+		parseInfo.notifyOnCompileResult(requestid, Thread.currentThread());
+		compile(requestid, prelude, srcFileName, src);
+		
+		try {
+			Thread.currentThread().wait();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
 	/**
 	 * Compile the string
 	 * 
@@ -377,42 +414,48 @@ public class PolyMLProcess {
 	 * @param b
 	 */
 	public void compileBuffer(Buffer b, EditPane e) {
-		String p = b.getPath();
+		String projectPath;
 		String src = b.getText(0, b.getLength());
-
-		String requestid = Integer.toString(msgID++);
-		parseInfo.parsingBuffer(b, e, requestid);
 		
 		// change directory to project directory, if there is a project
 		// directory.
 		String preSetupString = new String();
 		File projectDir = searchForProjectDir(b);
 		if (projectDir != null) {
-			p = projectDir.getParent();
-			if (p != null) {
-				preSetupString = "OS.FileSys.chDir \"" + p + "\"; ";
+			projectPath = projectDir.getParent();
+			if (projectPath != null) {
+				preSetupString = "OS.FileSys.chDir \"" + projectPath + "\"; ";
 			}
 		} else {
-			File bFile = new File(p);
-			p = bFile.getParent();
-			if (p != null) {
-				preSetupString = "OS.FileSys.chDir \"" + p + "\"; ";
+			File bFile = new File(b.getPath());
+			projectPath = bFile.getParent();
+			if (projectPath != null) {
+				preSetupString = "OS.FileSys.chDir \"" + projectPath + "\"; ";
 			}
 		}
 		System.err.println("PreStup String: " + preSetupString);
 
-		// load heap if there is one to be loaded.
+		// load heap if there is one to be loaded
 		String heap = searchForBufferHeapFile(b);
 		if (heap != null) {
 			preSetupString += "PolyML.SaveState.loadState \"" + heap + "\";";
+			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";";
+		} else if(ideHeapFile != null) {  // else try default heap
+			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";";
+			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";";
+		} else {
+			// no heap means that we are not setup for IDE use;
+			errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
+					ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
+			return;
 		}
 
 		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
-
-
 		
-		compile(requestid, preSetupString, b.getPath(), src);
+		System.err.println("prelude" + preSetupString + ";");
+		
+		compile(preSetupString, b.getPath(), src);
 	}
 
 	/**
@@ -453,8 +496,4 @@ public class PolyMLProcess {
 		}
 	}
 
-	// 0x1b
-
-	// ESC 'R' loadfile ESC ',' sourcename ESC ',' startposition ESC ',' source
-	// ESC 'r'
 }
