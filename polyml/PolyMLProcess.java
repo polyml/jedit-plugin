@@ -52,6 +52,8 @@ public class PolyMLProcess {
 	PolyMarkupPushStream errorPushStream;
 	
 	List<String> polyProcessCmd;
+	
+	int msgID; 
 
 	// String lastParseID;
 	// Buffer lastParsedBuffer;
@@ -61,13 +63,13 @@ public class PolyMLProcess {
 	public PolyMLProcess(List<String> cmd, DefaultErrorSource err)
 			throws IOException {
 		super();
+		msgID = 0;
 		errorSource = err;
 		process = null;
 		writer = null;
 		reader = null;
 		polyListener = null;
 		errorPushStream = null;
-
 		parseInfo = new ParseInfo();
 		
 		polyProcessCmd = cmd;
@@ -79,6 +81,7 @@ public class PolyMLProcess {
 	// -
 	public PolyMLProcess(DefaultErrorSource err) throws IOException {
 		super();
+		msgID = 0;
 		errorSource = err;
 		process = null;
 		writer = null;
@@ -181,6 +184,7 @@ public class PolyMLProcess {
 			// "PolyMLProcess:destorying poly-process: exit value: " + i);
 			// process.destroy();
 			// }
+			msgID = 0;
 			parseInfo.deleteAll();
 			process = null;
 			writer = null;
@@ -216,11 +220,11 @@ public class PolyMLProcess {
 		String lastParseID = parseInfo.getFromBuffer(p.getBuffer()).lastParseID;
 
 		if (lastParseID == null) {
-			System.err.println("PolyMLProcess:getProperiesAtCursor: no last parse ID");
+			System.err.println("PolyMLProcess:makePolyQuery: no last parse ID");
 			return;
 		}
 		
-		String requestid = "";
+		String requestid = Integer.toString(msgID++);
 		String cmd = ESC + Character.toString(c) + requestid + ESC_COMMA + lastParseID
 				+ ESC_COMMA + getOffsetsString(p) + ESC
 				+ Character.toString(Character.toLowerCase(c));
@@ -288,9 +292,7 @@ public class PolyMLProcess {
 	 * @param startPos
 	 * @param src
 	 */
-	void compile(String prelude, String srcFileName, String src) {
-
-		String requestid = srcFileName;
+	void compile(String requestid, String prelude, String srcFileName, String src) {
 		String compile_cmd = ESC_START + requestid + ESC_COMMA + srcFileName
 				+ ESC_COMMA + "0" + ESC_COMMA + prelude.length() + ESC_COMMA
 				+ src.length() + ESC_COMMA + prelude + ESC_COMMA + src
@@ -378,7 +380,8 @@ public class PolyMLProcess {
 		String p = b.getPath();
 		String src = b.getText(0, b.getLength());
 
-		parseInfo.parsingBuffer(b, e);
+		String requestid = Integer.toString(msgID++);
+		parseInfo.parsingBuffer(b, e, requestid);
 		
 		// change directory to project directory, if there is a project
 		// directory.
@@ -407,7 +410,9 @@ public class PolyMLProcess {
 		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
 
-		compile(preSetupString, b.getPath(), src);
+
+		
+		compile(requestid, preSetupString, b.getPath(), src);
 	}
 
 	/**

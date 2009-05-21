@@ -63,6 +63,9 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	}
 	
 	public synchronized void add(PolyMarkup m) {
+		PolyMLPlugin.debugMessage("\n\n"); 
+		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
+		
 		if(m.kind == PolyMarkup.INKIND_COMPILE) {
 			CompileResult r = new CompileResult(m);
 			
@@ -108,8 +111,23 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		} else if(m.kind == PolyMarkup.INKIND_TYPE_INFO) {
 			LocationResponse l = new LocationResponse(m);
 			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			String type_string = l.markup.next().getContent();
+			
 			pInfo.editPane.getTextArea().setSelection(new Selection.Range(l.start,l.end));
-			// FIXME: complete. 
+			
+			Buffer buffer = pInfo.editPane.getBuffer();
+			int line = buffer.getLineOfOffset(l.start);
+			int line_offset = l.start - buffer.getLineStartOffset(line);
+			int end_line = buffer.getLineOfOffset(l.end);
+			int end_offset = 0;
+			if (end_line == line) {
+				end_offset = l.end - buffer.getLineStartOffset(end_line);
+			}
+			
+			errorSource.addError(new DefaultErrorSource.DefaultError(
+					errorSource, ErrorSource.WARNING, buffer.getPath(), line,
+					line_offset, end_offset, type_string));
+			
 			System.err.println("PolyMarkupPushStream.add: Not yet fully implemented kind: " + m.kind);
 		} 
 		// Location responses
