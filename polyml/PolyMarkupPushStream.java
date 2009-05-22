@@ -1,27 +1,23 @@
 package polyml;
 
-import java.io.File;
 import java.util.Iterator;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
-import org.gjt.sp.jedit.textarea.TextArea;
 
+import pushstream.PushStream;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
-import polyml.ParseInfo.BufferParseInfo;
-import pushstream.PushStream;
 
 public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 
-	ParseInfo parseInfo;
+	CompileInfos compileInfos;
 	DefaultErrorSource errorSource;
 
-	public PolyMarkupPushStream(DefaultErrorSource e, ParseInfo p) {
+	public PolyMarkupPushStream(DefaultErrorSource e, CompileInfos p) {
 		errorSource = e;
-		parseInfo = p;
+		compileInfos = p;
 	}
 	
 	/**
@@ -42,14 +38,14 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			end = Integer.parseInt(markup.next().getContent());
 		}
 		
-		public String getSrcTextOfBuffer(Buffer srcBuffer) {
+		public String getSrcLocTextOfBuffer(Buffer srcBuffer) {
 			return srcBuffer.getText(start, end - start);
 		}
 		
-		public String getSrcText() {
-			BufferParseInfo pInfo = parseInfo.getFromParseID(parseID);
+		public String getSrcLocText() {
+			CompileRequest pInfo = compileInfos.getFromParseID(parseID);
 			Buffer buffer = jEdit.getBuffer(pInfo.fileName);
-			return getSrcTextOfBuffer(buffer);
+			return getSrcLocTextOfBuffer(buffer);
 		}
 	}
 	
@@ -88,8 +84,8 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	 * @param l
 	 */
 	void noteLocation(FullLocationResponse l) {
-		BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-		Buffer srcBuffer = jEdit.getBuffer(pInfo.fileName);
+		CompileRequest cr = compileInfos.getFromParseID(l.parseID);
+		Buffer srcBuffer = jEdit.getBuffer(cr.fileName);
 		//Buffer srcBuffer = pInfo.editPane.getBuffer();
 		
 		if(l.locExists()) {
@@ -104,7 +100,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			
 			errorSource.addError(new DefaultErrorSource.DefaultError(
 					errorSource, ErrorSource.WARNING, locBuffer.getPath(), line,
-					line_offset, end_offset, "Location of: `" + l.getSrcTextOfBuffer(srcBuffer) + "`" ));
+					line_offset, end_offset, "Location of: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
 		} else {
 			int line = srcBuffer.getLineOfOffset(l.start);
 			int line_offset = l.start - srcBuffer.getLineStartOffset(line);
@@ -116,21 +112,28 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			
 			errorSource.addError(new DefaultErrorSource.DefaultError(
 					errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
-					line_offset, end_offset, "No decloration for: `" + l.getSrcTextOfBuffer(srcBuffer) + "`" ));
+					line_offset, end_offset, "No decloration for: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
 		}
 	}
-	
+
 	public synchronized void add(PolyMarkup m) {
+		System.err.println("PolyMarkupPushStream: adding markup");
+		
 		PolyMLPlugin.debugMessage("\n\n"); 
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
 		
 		if(m.kind == PolyMarkup.INKIND_COMPILE) {
 			CompileResult r = new CompileResult(m);
 			
-			BufferParseInfo i = parseInfo.parseComplete(r);
-			
-			String fileName = i.fileName;
-			Buffer buffer = jEdit.getBuffer(i.fileName);
+			CompileRequest cr = compileInfos.compileCompleted(r);
+			System.err.println("got compile request result");
+			synchronized(cr) {
+				System.err.println("notifying all");
+				cr.notifyAll(); // any threads waiting on compile to be completed can wake up
+				System.err.println("notified all");
+			}
+			String fileName = cr.fileName;
+			Buffer buffer = jEdit.getBuffer(cr.fileName);
 			//String fileName = i.buffer.getPath();
 			//Buffer buffer = i.buffer;
 			
@@ -166,17 +169,17 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			}
 		} else if(m.kind == PolyMarkup.INKIND_PROPERTIES) {
 			LocationResponse l = new LocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
 			
-			// FIXME: synchronisation issue between getting buffer path and selecting right area in it
-			if(jEdit.getActiveView().getBuffer().getPath() == pInfo.fileName) {
+			// FIXME: synchronisation issue between getting buffer path and selecting right area in it?
+			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 			}
 		} else if(m.kind == PolyMarkup.INKIND_TYPE_INFO) {
 			LocationResponse l = new LocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
+			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
 			
-			if(jEdit.getActiveView().getBuffer().getPath() == pInfo.fileName) {
+			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 				Buffer srcBuffer = jEdit.getActiveView().getBuffer();
 				int line = srcBuffer.getLineOfOffset(l.start);
@@ -192,12 +195,12 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 					errorSource.addError(new DefaultErrorSource.DefaultError(
 							errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
 							line_offset, end_offset, "`" + type_string + "` is the type of: `" 
-							+ l.getSrcTextOfBuffer(srcBuffer) + "`"));
+							+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
 				} else {
 					errorSource.addError(new DefaultErrorSource.DefaultError(
 							errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
 							line_offset, end_offset, "Not a value, so no type: `" 
-							+ l.getSrcTextOfBuffer(srcBuffer) + "`"));
+							+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
 				}
 			}
 		} 
@@ -218,8 +221,8 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				|| m.kind == PolyMarkup.INKIND_MOVE_TO_PARENT
 				|| m.kind == PolyMarkup.INKIND_MOVE_TO_PREVIOUS) {
 			LocationResponse l = new LocationResponse(m);
-			BufferParseInfo pInfo = parseInfo.getFromParseID(l.parseID);
-			if(jEdit.getActiveView().getBuffer().getPath() == pInfo.fileName) {
+			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
+			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 			}
 		}

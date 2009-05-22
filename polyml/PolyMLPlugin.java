@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
+import org.gjt.sp.jedit.msg.PluginUpdate;
 import org.gjt.sp.jedit.msg.ViewUpdate;
 import org.gjt.sp.jedit.textarea.TextArea;
 
@@ -59,12 +61,10 @@ public class PolyMLPlugin extends EBPlugin {
 	static DefaultErrorSource errorSource;
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
-	static File IDEPolyHeapFile;
 
 	public PolyMLPlugin() {
 		super();
 		shells = new Hashtable<Buffer, ShellBuffer>();
-		IDEPolyHeapFile = null;
 		errorSource = null;
 		polyMLProcess = null;
 		debugBuffer = null;
@@ -93,6 +93,7 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 	
 	public static void debugMessage(String s) {
+		System.err.println("PolyMLPlugin: debugMessage: start");
 		if (Boolean.parseBoolean(jEdit
 				.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
 			if (debugBuffer == null) {
@@ -100,6 +101,7 @@ public class PolyMLPlugin extends EBPlugin {
 			}
 			debugBuffer.append(s);
 		}
+		System.err.println("PolyMLPlugin: debugMessage: end");
 	}
 
 	public static List<String> getPolyIDECmd() {
@@ -114,7 +116,7 @@ public class PolyMLPlugin extends EBPlugin {
 	public static String getPolyIDECmdString() {
 		return jEdit.getProperty(PROPS_POLY_IDE_COMMAND);
 	}
-
+	
 	// called when plugin is loaded/added
 	public void start() {
 		System.err.println("PolyMLPlugin: start called.");
@@ -131,78 +133,17 @@ public class PolyMLPlugin extends EBPlugin {
 			polyMLProcess.closeProcess();
 		}
 	}
-
+	
 	static public boolean restartPolyML() {
 		System.err.println("restarting polyml...");
-
+		
 		try {
 			if (polyMLProcess == null) {
 				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
 			} else {
 				polyMLProcess.setCmd(getPolyIDECmd());
-				polyMLProcess.restartProcess();
 			}
-			
-			String settingsDir = jEdit.getSettingsDirectory();
-			if (settingsDir != null) {
-				IDEPolyHeapFile = new File(settingsDir + File.separator + "ide.polysave");
-				long zipTime = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getFile().lastModified();
-				
-				if ((! IDEPolyHeapFile.exists()) 
-						|| (IDEPolyHeapFile.lastModified() < zipTime)) {
-
-					System.err.println("compiling IDE ML Code. ");
-					
-					File ideSrc = File.createTempFile("poly_ide", ".sml");
-
-					try {
-						ZipFile zip = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getZipFile();
-						// InputStream in = new FileInputStream(ideInternalSrc);
-						InputStream in = zip.getInputStream(zip.getEntry("ide.sml"));
-				        OutputStream out = new FileOutputStream(ideSrc);
-				    
-				        // Transfer bytes from in to out
-				        byte[] buf = new byte[1024];
-				        int len;
-				        while ((len = in.read(buf)) > 0) {
-				            out.write(buf, 0, len);
-				        }
-				        in.close();
-				        out.close();
-						
-						//FileChannel srcChannel = new FileInputStream(ideInternalSrc).getChannel();
-						//FileChannel srcChannel = EBPlugin.getResourceAsStream(jEdit.getPlugin(NAME), "ide.sml").getChannel();
-						//FileChannel srcChannel = new FileInputStream(ideInternalSrc).getChannel();
-						//FileChannel dstChannel = new FileOutputStream(ideSrc).getChannel();
-						//dstChannel.transferFrom(srcChannel, 0, srcChannel.size());
-						//srcChannel.close();
-						//dstChannel.close();
-				        polyMLProcess.sync_compile("", ideSrc.getPath(), 
-								"use \"" + ideSrc.getPath() + "\"; \n" 
-								+ "PolyML.SaveState.saveState \"" + IDEPolyHeapFile + "\"; \n");
-				        
-						// We tell the polyMLProcess that we now have a valid heap
-				        // IMPROVE: deal with compile result? 
-						if(! IDEPolyHeapFile.exists()){ 
-							// r.requestID.equals(PolyMLPlugin.IDEPolyHeapFile) && r.isSuccess())
-							System.err.println("Failed to make IDE heap");
-						} else {
-							polyMLProcess.setIDEHeap(IDEPolyHeapFile);
-						}
-						
-				        
-					} catch (IOException e) {
-						System.err.println("restartPolyML: failed to copy ide.sml");
-						e.printStackTrace();
-					}
-				} else {
-					polyMLProcess.setIDEHeap(IDEPolyHeapFile);
-				}
-			} else {
-				polyMLProcess.setIDEHeap(null);
-				System.err.println("PolyML needs to compile IDE ML code in the settings directory, but no settings directory if being used. You will not be able to use the IDE features of the polyml Plugin ");
-			}
-			
+			polyMLProcess.restartProcess();
 			return true;
 		} catch (IOException e) {
 			System.err.println("PolyMLPlugin: Failed to restart PolyML!");
@@ -211,10 +152,6 @@ public class PolyMLPlugin extends EBPlugin {
 			return false;
 		}
 	}
-
-	public static void setHaveValidIDEHeap() {
-		polyMLProcess.setIDEHeap(IDEPolyHeapFile);
-	}
 	
 	/**
 	 * send buffer to ML and process contents
@@ -222,7 +159,7 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @param b
 	 */
 	static public void sendBufferToPolyML(Buffer b, EditPane e) {
-		polyMLProcess.compileBuffer(b, e);
+		polyMLProcess.sendCompileBuffer(b, e);
 	}
 
 	/**
@@ -231,7 +168,7 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @param b
 	 */
 	static public void sendCancelToPolyML() {
-		polyMLProcess.cancelLastCompile();
+		polyMLProcess.sendCancelLastCompile();
 	}
 
 	/**
@@ -419,10 +356,14 @@ public class PolyMLPlugin extends EBPlugin {
 
 	/** handle buffer closing events to close associated process. */
 	public void handleMessage(EBMessage msg) {
-		if (shells == null) {
-			return;
-		}
-		if (msg instanceof BufferUpdate) {
+		/*if (msg instanceof PluginUpdate) {
+			if(((PluginUpdate)msg).getWhat() == PluginUpdate.LOADED 
+					&& ((PluginUpdate)msg).getPluginJAR() == this.getPluginJAR())
+			{
+				restartPolyML();
+			}
+		} else  */
+			if (msg instanceof BufferUpdate) {
 			BufferUpdate bufferUpdate = (BufferUpdate) msg;
 			// if a buffer is closed; close its associated shell
 			if (bufferUpdate.getWhat() == BufferUpdate.CLOSING) {

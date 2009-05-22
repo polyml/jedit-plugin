@@ -1,21 +1,17 @@
 package polyml;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FilenameFilter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.util.Hashtable;
+import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.zip.ZipFile;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
@@ -23,13 +19,9 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.TextArea;
 
-import polyml.ShellBuffer.PushStringToBuffer;
 import pushstream.CopyPushStream;
 import pushstream.InputStreamThread;
-import pushstream.PushStream;
 import pushstream.TimelyCharToStringStream;
-import pushstream.ReaderThread;
-
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 
@@ -57,13 +49,18 @@ public class PolyMLProcess {
 	int msgID; // counter for messages sent to poly
 
 	// all known parse query statuses, and last compile request ID
-	ParseInfo parseInfo; 
+	CompileInfos compileInfos; 
+	
+	Queue<CompileRequest> pendingCompiles;
+	
+	// running
+	volatile boolean mRunningQ;
 
 	// -
-	public PolyMLProcess(List<String> cmd, DefaultErrorSource err)
-			throws IOException {
+	public PolyMLProcess(List<String> cmd, DefaultErrorSource err) throws IOException {
 		super();
 		msgID = 0;
+		mRunningQ = false;
 		errorSource = err;
 		ideHeapFile = null;
 		process = null;
@@ -71,18 +68,16 @@ public class PolyMLProcess {
 		reader = null;
 		polyListener = null;
 		errorPushStream = null;
-		parseInfo = new ParseInfo();
-		
+		compileInfos = new CompileInfos();
+		//pendingCompiles = new LinkedList<CompileRequest>();
 		polyProcessCmd = cmd;
-		// lastParseID = null;
-		// lastParsedBuffer = null;
-		restartProcess();
 	}
 
 	// -
 	public PolyMLProcess(DefaultErrorSource err) throws IOException {
 		super();
 		msgID = 0;
+		mRunningQ = false;
 		errorSource = err;
 		ideHeapFile = null;
 		process = null;
@@ -90,11 +85,11 @@ public class PolyMLProcess {
 		reader = null;
 		polyListener = null;
 		errorPushStream = null;
-		parseInfo = new ParseInfo();
+		compileInfos = new CompileInfos();
+		//pendingCompiles = new LinkedList<CompileRequest>();
 		polyProcessCmd = new LinkedList<String>();
 		polyProcessCmd.add("poly");
 		polyProcessCmd.add("--ideprotocol --with-markup");
-		restartProcess();
 	}
 
 
@@ -102,35 +97,95 @@ public class PolyMLProcess {
 		polyProcessCmd = polyIDECmd;
 	}
 
-	public void setIDEHeap(File f) {
-		ideHeapFile = f;
+	
+	public boolean checkAndCreatePolyIDE() {
+		String settingsDir = jEdit.getSettingsDirectory();
+		if (settingsDir != null) {
+			ideHeapFile = new File(settingsDir + File.separator + "ide.polysave");
+			long zipTime = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getFile().lastModified();
+
+			if ((! ideHeapFile.exists()) || (ideHeapFile.lastModified() < zipTime)) {
+				System.err.println("compiling IDE ML Code. ");
+				try {
+					File ideSrc = File.createTempFile("poly_ide", ".sml");
+					ZipFile zip = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getZipFile();
+					InputStream in = zip.getInputStream(zip.getEntry("ide.sml"));
+					OutputStream out = new FileOutputStream(ideSrc);
+
+					// Transfer bytes from in to out
+					byte[] buf = new byte[1024];
+					int len;
+					while ((len = in.read(buf)) > 0) {
+						out.write(buf, 0, len);
+					}
+					in.close();
+					out.close();
+
+					syncCompile(new CompileRequest("", ideSrc.getPath(), 
+							"use \"" + ideSrc.getPath() + "\"; \n" 
+							+ "PolyML.SaveState.saveState \"" + ideHeapFile + "\"; \n"));
+
+					// We tell the polyMLProcess that we now have a valid heap
+					// IMPROVE: deal with compile result? 
+					if(! ideHeapFile.exists()){ 
+						// r.requestID.equals(PolyMLPlugin.IDEPolyHeapFile) && r.isSuccess())
+						System.err.println("Failed to make IDE heap");
+						ideHeapFile = null;
+						return false;
+					}
+					return true;
+				} catch (IOException e) {
+					System.err.println("restartPolyML: failed to copy ide.sml");
+					e.printStackTrace();
+					return false;
+				}
+			} else {
+				return true;
+			}
+		} else {
+			ideHeapFile = null;
+			System.err.println("PolyML needs to compile IDE ML code in " +
+					"the settings directory, but no settings directory if being used. " +
+			"You will not be able to use the IDE features of the polyml Plugin ");
+			return false;
+		}
 	}
 	
-	/**
-	 * sub class that can be called by other threads to add a string to the
-	 * debug buffer
-	 * 
-	 * @author ldixon
-	 */
-	public class PushStringToDebugBuffer implements PushStream<String> {
-
-		public PushStringToDebugBuffer() {
-		}
-
-		public void add(String s) {
-			PolyMLPlugin.debugMessage(s);
-		}
-
-		public void add(String s, boolean isMore) {
-			add(s);
-		}
-
-		public void close() {
-			PolyMLPlugin.debugMessage("<EOF>");
-		}
-
+	
+	
+	/* 
+	public synchronized CompileRequest pollPendingCompile() {
+		return pendingCompiles.poll();
 	}
-
+	
+	public synchronized void queueCompileRequest(CompileRequest c) {
+		pendingCompiles.add(c);
+	}
+	
+	public synchronized boolean isPendingCompile() {
+		return (!pendingCompiles.isEmpty());
+	}
+	
+	public synchronized void run() {
+		mRunningQ = true;		
+		while(mRunningQ){
+			CompileRequest c = pollPendingCompile();
+			if(c == null){
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			} else {
+				synchronized(c){
+					sendCompileRequest(c);
+				}
+				c.notify(); // in case a thread was waiting on this to be finished.
+			}
+		}			
+	}
+	*/
+	
 	/**
 	 * restart the process using the given command
 	 * 
@@ -152,15 +207,17 @@ public class PolyMLProcess {
 			reader = new DataInputStream(process.getInputStream());
 			writer = new DataOutputStream(process.getOutputStream());
 
-			errorPushStream = new PolyMarkupPushStream(errorSource, parseInfo);
+			errorPushStream = new PolyMarkupPushStream(errorSource, compileInfos);
 
 			// setup and start listening thread.
 			polyListener = new InputStreamThread(reader,
 					new CopyPushStream<Character>(new TimelyCharToStringStream(
 							new PushStringToDebugBuffer(), 100),
 							new PolyMarkup(errorPushStream)));
+			
+			//polyListener = new InputStreamThread(reader, new PolyMarkup(errorPushStream));
+			
 			polyListener.start();
-
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
 					+ polyProcessCmd);
@@ -173,6 +230,10 @@ public class PolyMLProcess {
 	 * stop the ML process
 	 */
 	public synchronized void closeProcess() {
+		if(mRunningQ) {
+			mRunningQ = false;
+			notify();
+		}
 		if (process != null) {
 			try {
 				writer.close();
@@ -190,7 +251,7 @@ public class PolyMLProcess {
 			// process.destroy();
 			// }
 			msgID = 0;
-			parseInfo.deleteAll();
+			compileInfos.deleteAll();
 			process = null;
 			writer = null;
 			reader = null;
@@ -220,9 +281,8 @@ public class PolyMLProcess {
 		return Integer.toString(offsets[0]) + ESC_COMMA + Integer.toString(offsets[1]);
 	}
 
-	
-	public void makePolyQuery(EditPane p, char c) {
-		String lastParseID = parseInfo.parseIDOfBuffer(p.getBuffer());
+	public synchronized void sendPolyQuery(EditPane p, char c) {
+		String lastParseID = compileInfos.parseIDOfBuffer(p.getBuffer());
 
 		if (lastParseID == null) {
 			System.err.println("PolyMLProcess:makePolyQuery: no last parse ID");
@@ -230,9 +290,10 @@ public class PolyMLProcess {
 		}
 		
 		String requestid = Integer.toString(msgID++);
-		String cmd = ESC + Character.toString(c) + requestid + ESC_COMMA + lastParseID
-				+ ESC_COMMA + getOffsetsString(p) + ESC
-				+ Character.toString(Character.toLowerCase(c));
+		String cmd = ESC + Character.toString(c) + requestid 
+				+ ESC_COMMA + lastParseID
+				+ ESC_COMMA + getOffsetsString(p) 
+				+ ESC + Character.toString(Character.toLowerCase(c));
 		
 		System.err.println("makePolyQuery: " + PolyMarkup.explicitEscapes(cmd));
 		sendToPoly(cmd);
@@ -242,52 +303,52 @@ public class PolyMLProcess {
 	 * get properties, type etc, of current selection/cursor in the text area
 	 */
 	public void sendGetProperies(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_PROPERTIES);
+		sendPolyQuery(p, PolyMarkup.INKIND_PROPERTIES);
 	}
 
 	public void sendGetType(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_TYPE_INFO);
+		sendPolyQuery(p, PolyMarkup.INKIND_TYPE_INFO);
 	}
 
 	
 	public void sendMoveToParent(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PARENT);
+		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PARENT);
 	}
 	
 	public void sendMoveToFirstChild(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD);
+		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD);
 	}
 	
 	public void sendMoveToNext(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_NEXT);
+		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_NEXT);
 	}
 	
 	public void sendMoveToPrevious(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PREVIOUS);
+		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PREVIOUS);
 	}
 	
 
 	public void sendLocationOfParentStructure(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT);
+		sendPolyQuery(p, PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT);
 	}
 	public void sendLocationDeclared(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_LOC_DECLARED);
+		sendPolyQuery(p, PolyMarkup.INKIND_LOC_DECLARED);
 	}
 	public void sendLocationOpened(EditPane p) {
-		makePolyQuery(p, PolyMarkup.INKIND_LOC_WHERE_OPENED);
+		sendPolyQuery(p, PolyMarkup.INKIND_LOC_WHERE_OPENED);
 	}
 	
 	/**
 	 */
-	public synchronized void cancelCompile(String requestID) {
+	public synchronized void sendCancelCompile(String requestID) {
 		String compile_cmd = ESC + "K" + requestID + ESC + "k";
 		sendToPoly(compile_cmd);
 	}
 	
-	public synchronized void cancelLastCompile() {
-		String lastRequestID = parseInfo.getLastCompileRequestID();
+	public synchronized void sendCancelLastCompile() {
+		String lastRequestID = compileInfos.getLastCompileRequestID();
 		if(lastRequestID != null) {
-			cancelCompile(lastRequestID);
+			sendCancelCompile(lastRequestID);
 		}
 	}
 
@@ -301,41 +362,47 @@ public class PolyMLProcess {
 	 * @param startPos
 	 * @param src
 	 */
-	synchronized void compile(String requestid, String prelude, String srcFileName, String src) {
-		String lastRequestID = parseInfo.getLastCompileRequestID();
+	synchronized void sendCompileRequest(String requestid, CompileRequest compileRequest) {		
+		
+		String lastRequestID = compileInfos.getLastCompileRequestID();
 		if(lastRequestID != null) {
-			cancelCompile(lastRequestID);
+			System.err.println("sending cancel compile.");
+			sendCancelCompile(lastRequestID);
 		}
 		
-		parseInfo.parsingBuffer(srcFileName, requestid);
+		compileInfos.compilingRequest(compileRequest, requestid);
 		
 		lastRequestID = requestid;
-		String compile_cmd = ESC_START + requestid + ESC_COMMA + srcFileName
-				+ ESC_COMMA + "0" + ESC_COMMA + prelude.length() + ESC_COMMA
-				+ src.length() + ESC_COMMA + prelude + ESC_COMMA + src
-				+ ESC_END;
+		String compile_cmd = ESC_START + requestid // request id
+			+ ESC_COMMA + compileRequest.fileName // filename for err msgs
+			+ ESC_COMMA + "0" // start offset
+			+ ESC_COMMA + compileRequest.prelude.length() // length of prelude 
+			+ ESC_COMMA + compileRequest.src.length() // length of src
+			+ ESC_COMMA + compileRequest.prelude //prelude
+			+ ESC_COMMA + compileRequest.src // src
+			+ ESC_END;
 
-		//System.err.println("CompileCmd: '" + compile_cmd + "';");
-
+		System.err.println("CompileCmd: '" + compile_cmd + "';");
 		sendToPoly(compile_cmd);
+		System.err.println("sent.");
 	}
 	
 	
-	public synchronized void compile(String prelude, String srcFileName, String src) {
+	public synchronized void sendCompileRequest(CompileRequest compileRequest) {
 		String requestid = Integer.toString(msgID++);
-		compile(requestid, prelude, srcFileName, src);
+		sendCompileRequest(requestid, compileRequest);
 	}
 	
 	
-	public void sync_compile(String prelude, String srcFileName, String src) {
-		String requestid = Integer.toString(msgID++);
-		parseInfo.notifyOnCompileResult(requestid, Thread.currentThread());
-		compile(requestid, prelude, srcFileName, src);
-		
-		try {
-			Thread.currentThread().wait();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+	public synchronized void syncCompile(CompileRequest compileRequest) {
+		synchronized(compileRequest) {
+			sendCompileRequest(compileRequest);
+			try {
+				//compileRequest.wait();
+				compileRequest.wait(5000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -413,7 +480,7 @@ public class PolyMLProcess {
 	 * 
 	 * @param b
 	 */
-	public void compileBuffer(Buffer b, EditPane e) {
+	public void sendCompileBuffer(Buffer b, EditPane e) {
 		String projectPath;
 		String src = b.getText(0, b.getLength());
 		
@@ -437,10 +504,11 @@ public class PolyMLProcess {
 
 		// load heap if there is one to be loaded
 		String heap = searchForBufferHeapFile(b);
+		
 		if (heap != null) {
 			preSetupString += "PolyML.SaveState.loadState \"" + heap + "\";";
 			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";";
-		} else if(ideHeapFile != null) {  // else try default heap
+		} else if(checkAndCreatePolyIDE()) {  // else try default heap
 			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";";
 			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";";
 		} else {
@@ -455,7 +523,7 @@ public class PolyMLProcess {
 		
 		System.err.println("prelude" + preSetupString + ";");
 		
-		compile(preSetupString, b.getPath(), src);
+		sendCompileRequest(new CompileRequest(preSetupString, b.getPath(), src));
 	}
 
 	/**
