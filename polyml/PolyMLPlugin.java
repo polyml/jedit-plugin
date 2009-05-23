@@ -61,6 +61,7 @@ public class PolyMLPlugin extends EBPlugin {
 	static DefaultErrorSource errorSource;
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
+	static Class<jEdit> jEditGUILock;
 
 	public PolyMLPlugin() {
 		super();
@@ -68,6 +69,7 @@ public class PolyMLPlugin extends EBPlugin {
 		errorSource = null;
 		polyMLProcess = null;
 		debugBuffer = null;
+		jEditGUILock = jEdit.class;
 		System.err.println("PolyMLPlugin: started!");
 	}
 
@@ -93,15 +95,15 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 	
 	public static void debugMessage(String s) {
-		System.err.println("PolyMLPlugin: debugMessage: start");
-		if (Boolean.parseBoolean(jEdit
-				.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
-			if (debugBuffer == null) {
-				debugBuffer = new BufferEditor();
+		synchronized(jEditGUILock){
+			if (Boolean.parseBoolean(jEdit
+					.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
+				if (debugBuffer == null) {
+					debugBuffer = new BufferEditor();
+				}
+				debugBuffer.append(s);
 			}
-			debugBuffer.append(s);
 		}
-		System.err.println("PolyMLPlugin: debugMessage: end");
 	}
 
 	public static List<String> getPolyIDECmd() {
@@ -136,7 +138,6 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	static public boolean restartPolyML() {
 		System.err.println("restarting polyml...");
-		
 		try {
 			if (polyMLProcess == null) {
 				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
@@ -159,6 +160,9 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @param b
 	 */
 	static public void sendBufferToPolyML(Buffer b, EditPane e) {
+		errorSource.removeFileErrors(b.getPath());
+		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
+				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
 		polyMLProcess.sendCompileBuffer(b, e);
 	}
 
@@ -232,24 +236,26 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 
 	static public ShellBuffer newShellBuffer() {
-		Buffer b = jEdit.newFile(null, jEdit.getFirstView().getBuffer()
-				.getDirectory());
-		// System.err.println("newShellBuffer");
+		synchronized(jEditGUILock){
+			Buffer b = jEdit.newFile(null, jEdit.getActiveView().getBuffer()
+					.getDirectory());
+			// System.err.println("newShellBuffer");
 
-		ShellBuffer s;
-		try {
-			s = new ShellBuffer(new BufferEditor(b));
-			shells.put(b, s);
-			// show buffer after adding to shell list so that buffer
-			// changed events trigger use of text area extensions.
-			View v = jEdit.getFirstView();
-			v.showBuffer(b);
-			s.showInTextArea(v.getTextArea());
-			return s;
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.err.println(e.toString());
-			return null;
+			ShellBuffer s;
+			try {
+				s = new ShellBuffer(new BufferEditor(b));
+				shells.put(b, s);
+				// show buffer after adding to shell list so that buffer
+				// changed events trigger use of text area extensions.
+				View v = jEdit.getActiveView();
+				v.showBuffer(b);
+				s.showInTextArea(v.getTextArea());
+				return s;
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.err.println(e.toString());
+				return null;
+			}
 		}
 	}
 
@@ -327,7 +333,7 @@ public class PolyMLPlugin extends EBPlugin {
 
 	/**
 	 * when an edit pane shows a ShellBuffer, add the shell Buffer's
-	 * TextAreaExtension.
+	 * TextAreaExtension. (For showing the cool red prompt)
 	 * 
 	 * @param editPane
 	 */

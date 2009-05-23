@@ -281,7 +281,7 @@ public class PolyMLProcess {
 		return Integer.toString(offsets[0]) + ESC_COMMA + Integer.toString(offsets[1]);
 	}
 
-	public synchronized void sendPolyQuery(EditPane p, char c) {
+	public synchronized void sendPolyQuery(EditPane p, char c, String more) {
 		String lastParseID = compileInfos.parseIDOfBuffer(p.getBuffer());
 
 		if (lastParseID == null) {
@@ -292,8 +292,13 @@ public class PolyMLProcess {
 		String requestid = Integer.toString(msgID++);
 		String cmd = ESC + Character.toString(c) + requestid 
 				+ ESC_COMMA + lastParseID
-				+ ESC_COMMA + getOffsetsString(p) 
-				+ ESC + Character.toString(Character.toLowerCase(c));
+				+ ESC_COMMA + getOffsetsString(p);
+		
+		if(more != null) {
+			cmd += more;
+		}
+		
+		cmd += ESC + Character.toString(Character.toLowerCase(c));
 		
 		System.err.println("makePolyQuery: " + PolyMarkup.explicitEscapes(cmd));
 		sendToPoly(cmd);
@@ -303,39 +308,39 @@ public class PolyMLProcess {
 	 * get properties, type etc, of current selection/cursor in the text area
 	 */
 	public void sendGetProperies(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_PROPERTIES);
+		sendPolyQuery(p, PolyMarkup.KIND_PROPERTIES, null);
 	}
 
 	public void sendGetType(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_TYPE_INFO);
+		sendPolyQuery(p, PolyMarkup.KIND_TYPE_INFO, null);
 	}
 
 	
 	public void sendMoveToParent(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PARENT);
+		sendPolyQuery(p, PolyMarkup.KIND_MOVE, ESC_COMMA + "U");
 	}
 	
 	public void sendMoveToFirstChild(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_FIRST_CHILD);
+		sendPolyQuery(p, PolyMarkup.KIND_MOVE, ESC_COMMA + "U");
 	}
 	
 	public void sendMoveToNext(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_NEXT);
+		sendPolyQuery(p, PolyMarkup.KIND_MOVE, ESC_COMMA + "N");
 	}
 	
 	public void sendMoveToPrevious(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_MOVE_TO_PREVIOUS);
+		sendPolyQuery(p, PolyMarkup.KIND_MOVE, ESC_COMMA + "P");
 	}
 	
 
 	public void sendLocationOfParentStructure(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_LOC_OF_PARENT_STRUCT);
+		sendPolyQuery(p, PolyMarkup.KIND_LOC, ESC_COMMA + "S");
 	}
 	public void sendLocationDeclared(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_LOC_DECLARED);
+		sendPolyQuery(p, PolyMarkup.KIND_LOC, ESC_COMMA + "I");
 	}
 	public void sendLocationOpened(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.INKIND_LOC_WHERE_OPENED);
+		sendPolyQuery(p, PolyMarkup.KIND_LOC, ESC_COMMA + "J");
 	}
 	
 	/**
@@ -382,9 +387,9 @@ public class PolyMLProcess {
 			+ ESC_COMMA + compileRequest.src // src
 			+ ESC_END;
 
-		System.err.println("CompileCmd: '" + compile_cmd + "';");
+		//System.err.println("CompileCmd: '" + compile_cmd + "';");
 		sendToPoly(compile_cmd);
-		System.err.println("sent.");
+		//System.err.println("sent.");
 	}
 	
 	
@@ -490,27 +495,19 @@ public class PolyMLProcess {
 		File projectDir = searchForProjectDir(b);
 		if (projectDir != null) {
 			projectPath = projectDir.getParent();
-			if (projectPath != null) {
-				preSetupString = "OS.FileSys.chDir \"" + projectPath + "\"; ";
-			}
 		} else {
 			File bFile = new File(b.getPath());
 			projectPath = bFile.getParent();
-			if (projectPath != null) {
-				preSetupString = "OS.FileSys.chDir \"" + projectPath + "\"; ";
-			}
 		}
-		System.err.println("PreStup String: " + preSetupString);
 
 		// load heap if there is one to be loaded
 		String heap = searchForBufferHeapFile(b);
-		
 		if (heap != null) {
-			preSetupString += "PolyML.SaveState.loadState \"" + heap + "\";";
-			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";";
+			preSetupString += "PolyML.SaveState.loadState \"" + heap + "\";\n";
+			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";\n";
 		} else if(checkAndCreatePolyIDE()) {  // else try default heap
-			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";";
-			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";";
+			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";\n";
+			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";\n";
 		} else {
 			// no heap means that we are not setup for IDE use;
 			errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
@@ -518,10 +515,9 @@ public class PolyMLProcess {
 			return;
 		}
 
-		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
-				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
-		
-		System.err.println("prelude" + preSetupString + ";");
+		preSetupString = "OS.FileSys.chDir \"" + projectPath + "\";\n";
+
+		System.err.println("\nML Prelude: \n " + preSetupString + "\n;\n");
 		
 		sendCompileRequest(new CompileRequest(preSetupString, b.getPath(), src));
 	}

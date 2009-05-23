@@ -26,17 +26,16 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	public final static int STATUS_COMPLETE = 10;
 	
-	public final static char INKIND_COMPILE = 'R';
-	public final static char INKIND_PROPERTIES = 'O';
-	public final static char INKIND_TYPE_INFO = 'T';
-	public final static char INKIND_LOC_DECLARED = 'I';
-	public final static char INKIND_MOVE_TO_PARENT = 'U';
-	public final static char INKIND_MOVE_TO_FIRST_CHILD = 'C';
-	public final static char INKIND_MOVE_TO_NEXT = 'N';
-	public final static char INKIND_MOVE_TO_PREVIOUS = 'P';
-	public final static char INKIND_LOC_WHERE_OPENED = 'J';
-	public final static char INKIND_LOC_OF_PARENT_STRUCT = 'J';
 	public final static char OUTKIND_CANCEL = 'K';
+	
+	public final static char KIND_COMPILE = 'R';
+	public final static char KIND_PROPERTIES = 'O';
+	public final static char KIND_TYPE_INFO = 'T';
+	
+	public final static char KIND_LOC = 'I';
+	
+	public final static char KIND_MOVE = 'M';
+	
 	
 	// status of lazy markup
 	int status;

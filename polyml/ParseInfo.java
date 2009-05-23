@@ -110,14 +110,14 @@ public class ParseInfo {
 			// update table from parse ID's to parse result, if we successfully parsed file.
 			// any new messages will have the new parse current ID, 
 			// which is already in the parse ID table
-			System.err.println("i.sentParseID: " + i.sentParseID + "; r.parseID: " + r.parseID);
+			//System.err.println("i.sentParseID: " + i.sentParseID + "; r.parseID: " + r.parseID);
 			if(i.sentParseID.equals(r.parseID)) {
 				if(i.prevParseID != null) {
 					parseMap.remove(i.prevParseID);
 				}
 				i.prevParseID = i.lastParseID;
 				i.lastParseID = r.parseID;
-				System.err.println("i.lastParseID: " + i.lastParseID + "; i.prevParseID: " + i.prevParseID);
+				//System.err.println("i.lastParseID: " + i.lastParseID + "; i.prevParseID: " + i.prevParseID);
 			} else { // parse failed; so no other message will refer to requestID
 				parseMap.remove(i.sentParseID);
 			}
