@@ -300,7 +300,7 @@ public class PolyMLProcess {
 		
 		cmd += ESC + Character.toString(Character.toLowerCase(c));
 		
-		System.err.println("makePolyQuery: " + PolyMarkup.explicitEscapes(cmd));
+		System.err.println("sendPolyQuery: " + PolyMarkup.explicitEscapes(cmd));
 		sendToPoly(cmd);
 	}
 	
@@ -321,7 +321,7 @@ public class PolyMLProcess {
 	}
 	
 	public void sendMoveToFirstChild(EditPane p) {
-		sendPolyQuery(p, PolyMarkup.KIND_MOVE, ESC_COMMA + "U");
+		sendPolyQuery(p, PolyMarkup.KIND_MOVE, ESC_COMMA + "C");
 	}
 	
 	public void sendMoveToNext(EditPane p) {
@@ -393,6 +393,7 @@ public class PolyMLProcess {
 	}
 	
 	
+	// IMPROVE: put request ID directly in message? 
 	public synchronized void sendCompileRequest(CompileRequest compileRequest) {
 		String requestid = Integer.toString(msgID++);
 		sendCompileRequest(requestid, compileRequest);

@@ -160,6 +160,7 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @param b
 	 */
 	static public void sendBufferToPolyML(Buffer b, EditPane e) {
+		//errorSource.clear();
 		errorSource.removeFileErrors(b.getPath());
 		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
