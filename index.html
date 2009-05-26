@@ -1,11 +1,60 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
+  <title></title>
+
+
+  <style type="text/css">
+code { font-family: Courier New,Courier,monospace;
+}
+  </style>
 </head>
+
+
 <body>
-<h1>PolyML Plugin</h1>
+
+<h1>PolyML JEdit Plugin</h1>
+
+<h2>About</h2>
+
+The JEdit PolyML Plugin provides <a href="http://www.jedit.org/">JEdit</a>
+with features for editing, compiling, and examining SML Code.
+&nbsp;It requires that <a href="http://www.polyml.org/">PolyML</a>
+5.3 or later is installed. The plugin and PolyML IDE mode has been developed and is being
+supported by <a href="http://homepages.inf.ed.ac.uk/ldixon/">Lucas
+Dixon</a> and David Matthews. The project is open-source, under the <a href="http://www.gnu.org/copyleft/lesser.html">GNU Lesser General Public License</a>, and is hosted by sourceforge at <a href="http://sourceforge.net/projects/polyml/">http://sourceforge.net/projects/polyml/</a> <br>
+
+<h2>Installing</h2>
+
+The plugin is a self-contained jar file, but assumes you have installed
+<a href="http://www.jedit.org/">jEdit</a> (tested on
+version 4.3 pre 16) as well as <a href="http://www.polyml.org/">PolyML</a>
+(tested with version 5.3). Currently, it also uses the jEdit <a href="http://plugins.jedit.org/plugins/?ErrorList">ErrorList plugin</a>, so you will need to install that first. This can be done easily using the Plugin Manager within jEdit. <br>
 <br>
-no documentation yet.
-<br>
+To install the PolyML plugin, you need to place it into
+either your jEdit's "<code>jars</code>" subdirectory of its install directory, or your user account's jEdit "<code>jars</code>" subdirectory - in unix systems this is "<code>.jedit/jars</code>". When you then startup jEdit you should have a new menu item within the&nbsp;<code>Plugins</code> menu called&nbsp;<code>PolyML-Plugin</code>. <br>
+<h2>Features of the Plugin</h2>
+<h3>Shell buffer</h3>
+The shell buffer gives you a terminal within a buffer much like emacs
+shell mode. Within this buffer there is a prompt and all text after the
+prompt is considered as input and can be sent to the underlying
+(PolyML) process. All output from the underlying PolyML process is
+printed at the start of the shell-prompt. You have all the normal
+editing tools for that buffer.&nbsp;<br>
+<h3>PolyML IDE protocol</h3>
+The PolyML Plugin provide a method to interact with PolyML's IDE protocol. This allows:<br>
+<ul>
+  <li>the parsing/type-checking/evaluation of buffers by ML. Error
+messages and warnings displayed in the ErrorList panel, provided by the
+ErrorList plugin;</li>
+  <li>get the type of a value;</li>
+  <li>get the location where a value is declared, the structure in
+which it is defined, and if it has been introduced by an open, you can
+also get the location of the open statement;</li>
+  <li>the user can move around the parse-tree.</li>
+</ul>
+These functions are all available from the PolyML-Plugin sub-menu of
+the Plugins menu. You can assign the functions useful shortcuts from
+jEdit's Global Options (in the Utilities menu).
 </body>
 </html>
