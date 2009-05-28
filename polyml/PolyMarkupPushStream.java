@@ -74,7 +74,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			}
 		}
 		
-		public boolean locExists() {
+		public boolean locGiven() {
 			return (filenameLoc != null);
 		}
 	}
@@ -88,19 +88,33 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		Buffer srcBuffer = jEdit.getBuffer(cr.fileName);
 		//Buffer srcBuffer = pInfo.editPane.getBuffer();
 		
-		if(l.locExists()) {
+		if(l.locGiven()) {
 			Buffer locBuffer = jEdit.getBuffer(l.filenameLoc);
-			int line = locBuffer.getLineOfOffset(l.startLoc);
-			int line_offset = l.startLoc - locBuffer.getLineStartOffset(line);
-			int end_line = locBuffer.getLineOfOffset(l.endLoc);
-			int end_offset = 0;
-			if (end_line == line) {
-				end_offset = l.endLoc - locBuffer.getLineStartOffset(end_line);
+			if(locBuffer != null) {
+				int line = locBuffer.getLineOfOffset(l.startLoc);
+				int line_offset = l.startLoc - locBuffer.getLineStartOffset(line);
+				int end_line = locBuffer.getLineOfOffset(l.endLoc);
+				int end_offset = 0;
+				if (end_line == line) {
+					end_offset = l.endLoc - locBuffer.getLineStartOffset(end_line);
+				}
+
+				errorSource.addError(new DefaultErrorSource.DefaultError(
+						errorSource, ErrorSource.WARNING, locBuffer.getPath(), line,
+						line_offset, end_offset, "Location of: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
+			} else {
+				int line = srcBuffer.getLineOfOffset(l.start);
+				int line_offset = l.start - srcBuffer.getLineStartOffset(line);
+				int end_line = srcBuffer.getLineOfOffset(l.end);
+				int end_offset = 0;
+				if (end_line == line) {
+					end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
+				}
+				errorSource.addError(new DefaultErrorSource.DefaultError(
+						errorSource, ErrorSource.WARNING, cr.fileName, line,
+						line_offset, end_offset, "No such file: `" + l.filenameLoc + "` : " 
+						+ l.startLoc + ":" + l.endLoc));
 			}
-			
-			errorSource.addError(new DefaultErrorSource.DefaultError(
-					errorSource, ErrorSource.WARNING, locBuffer.getPath(), line,
-					line_offset, end_offset, "Location of: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
 		} else {
 			int line = srcBuffer.getLineOfOffset(l.start);
 			int line_offset = l.start - srcBuffer.getLineStartOffset(line);
@@ -116,7 +130,8 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		}
 	}
 
-	public synchronized void add(PolyMarkup m) {		
+	public synchronized void add(PolyMarkup m) {
+		
 		PolyMLPlugin.debugMessage("\n\n"); 
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
 		
@@ -124,42 +139,58 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			CompileResult r = new CompileResult(m);
 			
 			CompileRequest cr = compileInfos.compileCompleted(r);
+			errorSource.removeFileErrors(cr.fileName);
 			synchronized(cr) {
 				cr.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
 			String fileName = cr.fileName;
 			Buffer buffer = jEdit.getBuffer(cr.fileName);
+			
 			//String fileName = i.buffer.getPath();
 			//Buffer buffer = i.buffer;
-			
-			errorSource.removeFileErrors(fileName);
-			if(r.isBug()) {
+			System.err.println("Completed compile for file: " + cr.fileName);
+			if(buffer == null) {
+				//System.err.println("buffer for: " + cr.fileName + " is null! opening it ");
+				buffer = jEdit.openFile(null, cr.fileName);
+				if(buffer == null) {
+					System.err.println("cannot open: " +  cr.fileName);
+				}
+			}
+						
+			if(r.isBug() || buffer == null) {
 				errorSource.addError(new DefaultErrorSource.DefaultError(
 						errorSource, ErrorSource.ERROR, fileName, 0,
-						0, 0, "BUG: Failed to check using PolyML."));
+						0, 0, "BUG: Failed to check, or have null buffer."));
 			} else {
 				for (PolyMLError e : r.errors) {
 					
 					//System.err.println("PolyMarkupPushStream: error at: " + e.startPos + ":" + e.endPos);
+					System.err.println("going thruogh the error list...");
 					
-					int line = buffer.getLineOfOffset(e.startPos);
-					int line_offset = e.startPos - buffer.getLineStartOffset(line);
-					int end_line = buffer.getLineOfOffset(e.endPos);
-					int end_offset = 0;
-					if (end_line == line) {
-						end_offset = e.endPos - buffer.getLineStartOffset(end_line);
-					}
+					try {
+						int line = buffer.getLineOfOffset(e.startPos);
+						int line_offset = e.startPos - buffer.getLineStartOffset(line);
+						int end_line = buffer.getLineOfOffset(e.endPos);
+						int end_offset = 0;
+						if (end_line == line) {
+							end_offset = e.endPos - buffer.getLineStartOffset(end_line);
+						}
 					
-					int errorKind;
-					if(e.kind == PolyMLError.KIND_FATAL || e.kind == PolyMLError.KIND_EXCEPTION){
-						errorKind = ErrorSource.ERROR;
-					} else {
-						errorKind = ErrorSource.WARNING;
-					}
+						int errorKind;
+						if(e.kind == PolyMLError.KIND_FATAL || e.kind == PolyMLError.KIND_EXCEPTION){
+							errorKind = ErrorSource.ERROR;
+						} else {
+							errorKind = ErrorSource.WARNING;
+						}
 					
-					errorSource.addError(new DefaultErrorSource.DefaultError(
+						errorSource.addError(new DefaultErrorSource.DefaultError(
 							errorSource, errorKind, fileName, line,
 							line_offset, end_offset, e.message));
+
+					} catch(java.lang.ArrayIndexOutOfBoundsException ex) {
+						ex.printStackTrace();
+					}
+					
 				}
 			}
 			

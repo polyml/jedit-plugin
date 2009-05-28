@@ -44,7 +44,8 @@ public class PolyMarkup implements PushStream<Character> {
 	Character kind; // when Markup a field this is null
 	List<PolyMarkup> fields; // when Markup is only content, this is null
 	String content; // when Markup is only fields, this is null
-	Queue<PolyMarkup> parents; // 
+	LinkedList<PolyMarkup> parents; // 
+	int dfieldcount = 0;
 
 	PushStream<PolyMarkup> markupStream;
 
@@ -131,9 +132,6 @@ public class PolyMarkup implements PushStream<Character> {
 			} else {
 				status = STATUS_OUTSIDE;
 			}
-			//else if(c == 'D') { // translate extra info markup, put into 
-			//	status = STATUS_OUTSIDE_IN_D;
-			//}
 		} else if(status == STATUS_OUTSIDE) {
 			if(c == ESC) {
 				status = STATUS_OUTSIDE_ESC;
@@ -147,6 +145,7 @@ public class PolyMarkup implements PushStream<Character> {
 		} else if(status == STATUS_INSIDE_ESC) {
 			if(c == 'D') {
 				status = STATUS_INSIDE_IN_D;
+				dfieldcount = 0;
 				addToContent('[');
 			} else if( c >= 'A' && c <= 'Z') { // new tag, markup started!
 				if(content != null) { // create new subtag with content
@@ -154,12 +153,14 @@ public class PolyMarkup implements PushStream<Character> {
 					content = null;
 				}
 				PolyMarkup parent = new PolyMarkup(kind,fields);
-				parents.add(parent);
+				parents.addFirst(parent);
 				fields = null;
 				kind = new Character(c);
+				//System.err.println("new inside: " + kind + "; parent was: " + parent.kind);
 				status = STATUS_INSIDE;
 			} else if ( c >= 'a' && c <= 'z' ) { // end tag
-				if(Character.toLowerCase(kind) == c) {					
+				if(Character.toLowerCase(kind) == c) {
+					//System.err.println("closing: " + kind);
 					PolyMarkup cur;
 					if(fields == null) {
 						if(content == null) { content = new String(); }
@@ -171,6 +172,8 @@ public class PolyMarkup implements PushStream<Character> {
 						cur = new PolyMarkup(kind,fields);
 					}
 					
+					//System.err.println("cur: " + cur.toPrettyString());
+
 					if(parents.isEmpty()) {
 						status = STATUS_COMPLETE;
 						// push on completed markup to markup stream
@@ -180,7 +183,7 @@ public class PolyMarkup implements PushStream<Character> {
 						// if we close the last tag, we have completed parsing!
 						resetMarkup();
 					} else {
-						PolyMarkup oldParent = parents.remove();
+						PolyMarkup oldParent = parents.removeFirst();
 						fields = oldParent.fields;
 						kind = oldParent.kind;
 						content = null;
@@ -188,19 +191,19 @@ public class PolyMarkup implements PushStream<Character> {
 						status = STATUS_INSIDE;
 					}
 				} else {
-					System.err.println("addChar: STATUS_INSIDE_ESC: unexpected ESC char: " + c);
+					System.err.println("addChar: STATUS_INSIDE_ESC: unexpected ESC char: " + c + "; within kind: " + kind);
 					status = STATUS_INSIDE;
 				}
 			} else if( c == ',') {
+				// if content of last field is null, make it empty string. 
 				if(content == null) { content = new String(); }
 				addToFields(new PolyMarkup(null,content));
 				content = null;
 				status = STATUS_INSIDE;
 			} else {
-				System.err.println("addChar: STATUS_INSIDE_ESC: unexpected ESC char: " + c);
+				System.err.println("addChar: STATUS_INSIDE_ESC: unexpected ESC char: " + c + "; within kind: " + kind);
 				status = STATUS_INSIDE;
 			}
-		
 		} else if(status == STATUS_INSIDE_IN_D ) {
 			if(c == ESC) {
 				status = STATUS_INSIDE_ESC_IN_D;
@@ -210,12 +213,17 @@ public class PolyMarkup implements PushStream<Character> {
 		} else if(status == STATUS_INSIDE_ESC_IN_D) {
 			if(content == null) { content = new String(); }
 			if(c == ',') {
+				dfieldcount ++;
+				if(dfieldcount == 4) {
+					addToContent(']');
+				} else {
+					content += c;
+				}
 				status = STATUS_INSIDE_IN_D;
-				content += c;
-			} else if (c == ';'){
-				addToContent(']');
-				status = STATUS_INSIDE_IN_D;
-			} else if (c == 'd'){
+			// } else if (c == ';'){
+			//	addToContent(']');
+			//	status = STATUS_INSIDE_IN_D;
+		} else if (c == 'd'){
 				status = STATUS_INSIDE;
 			} else {
 				System.err.println("addChar: STATUS_INSIDE_ESC_IN_D: unexpected ESC char: " + c);
@@ -227,6 +235,37 @@ public class PolyMarkup implements PushStream<Character> {
 		}
 	}
 	
+	public void ascifyDMarkup() {
+		System.err.print("kind: " + kind);
+		
+		if(kind != null && kind == 'D') {
+			System.err.print("fields: " + fields);
+			if(fields != null) {
+				Iterator<PolyMarkup> i = fields.iterator();
+				String location = i.next().getContent();
+				System.err.print("location: " + location);
+				String line = i.next().getContent();
+				String offset1 = i.next().getContent();
+				String offset2 = i.next().getContent();
+				
+				content = "[" + location + ":" + line + ":" + offset1 + "-" 
+				  + offset2 + "] ";
+				
+				System.err.print("content starts: " + content);
+				
+				while(i.hasNext()) {
+					PolyMarkup m2 = i.next();
+					m2.ascifyDMarkup();
+					content += m2.getContent();
+				}
+				fields = null;
+			}
+		} else if(fields != null) {
+			for(PolyMarkup m2 : fields) {
+				m2.ascifyDMarkup();
+			}
+		}
+	}
 	
 	// NOTE: interesting case for generic inefficiency in imperative languages: 
 	// end up with hasPrev set each time in the loop - but only needed once. 

@@ -212,7 +212,7 @@ public class PolyMLProcess {
 			// setup and start listening thread.
 			polyListener = new InputStreamThread(reader,
 					new CopyPushStream<Character>(new TimelyCharToStringStream(
-							new PushStringToDebugBuffer(), 100),
+							new PushStringToDebugBuffer(), 300),
 							new PolyMarkup(errorPushStream)));
 			
 			//polyListener = new InputStreamThread(reader, new PolyMarkup(errorPushStream));
@@ -504,7 +504,9 @@ public class PolyMLProcess {
 		// load heap if there is one to be loaded
 		String heap = searchForBufferHeapFile(b);
 		if (heap != null) {
-			preSetupString += "PolyML.SaveState.loadState \"" + heap + "\";\n";
+			preSetupString += "let val p = ! PolyML.IDEInterface.parseTree in \n" +
+					"(PolyML.SaveState.loadState \"" + heap + "\"; \n" +
+					" PolyML.IDEInterface.parseTree := p) end; \n";
 			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";\n";
 		} else if(checkAndCreatePolyIDE()) {  // else try default heap
 			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";\n";
@@ -515,11 +517,12 @@ public class PolyMLProcess {
 					ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
 			return;
 		}
-
-		preSetupString = "OS.FileSys.chDir \"" + projectPath + "\";\n";
+		
+		preSetupString += "OS.FileSys.chDir \"" + projectPath + "\";\n";
 
 		System.err.println("\nML Prelude: \n " + preSetupString + "\n;\n");
 		
+		errorSource.removeFileErrors(b.getPath());
 		sendCompileRequest(new CompileRequest(preSetupString, b.getPath(), src));
 	}
 

@@ -15,14 +15,17 @@ public class PolyMLError {
 	public int startPos;
 	public int endPos;
 	public String message;
+	public String fileName;
+	public String randomValue;
 	
 	public PolyMLError(char k, int s, int e, String m){
 		kind = k;
 		startPos = s;
 		endPos = e;
 		message = m;
+		fileName = null;
+		randomValue = null;
 	}
-	
 	
 	public PolyMLError(PolyMarkup m) throws MarkupException{
 		
@@ -33,12 +36,15 @@ public class PolyMLError {
 		if(c == KIND_FATAL || c == KIND_WARNING) {
 			kind = c;
 			
-			s = i.next().getContent();
-			startPos = Integer.parseInt(s);
+			fileName = i.next().getContent();
 			
-			s = i.next().getContent();
-			endPos = Integer.parseInt(s);
+			randomValue = i.next().getContent();
 			
+			startPos = Integer.parseInt(i.next().getContent());
+			
+			endPos = Integer.parseInt(i.next().getContent());
+			
+			//message = new String();
 			message = i.next().getContent();
 			
 		} else {

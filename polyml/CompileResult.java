@@ -78,7 +78,13 @@ public class CompileResult {
 					while (i.hasNext()) {
 						PolyMarkup m2 = i.next();
 						if (m2.getKind() == 'E') {
-							errors.add(new PolyMLError(m2));
+							try {
+								errors.add(new PolyMLError(m2));
+							} catch(java.lang.NumberFormatException e) {
+								System.err.print("Cannot create error, bad markup: \n" 
+										+ m2.toPrettyString());
+							}
+						
 						} else {
 							throw new MarkupException(
 									"CompileResult:un-expected kind: " + m2.getKind(), m2);
