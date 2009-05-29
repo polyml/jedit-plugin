@@ -169,16 +169,19 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			}
 			
 			errorSource.removeFileErrors(fileName);
-	
-			if(r.isSuccess()){
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.WARNING, fileName, 0,
-						0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
-			} else if(r.isBug() || buffer == null) {
+
+			if(r.isBug() || buffer == null) {
 				errorSource.addError(new DefaultErrorSource.DefaultError(
 						errorSource, ErrorSource.ERROR, fileName, 0,
 						0, 0, "BUG: Failed to check, or have null buffer."));
 			} else {
+				if(r.isSuccess()){
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.WARNING, fileName, 0,
+							0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
+				}
+				
+				// can still have errors even is success: e.g. warnings. 
 				for (PolyMLError e : r.errors) {
 					
 					//System.err.println("PolyMarkupPushStream: error at: " + e.startPos + ":" + e.endPos);
