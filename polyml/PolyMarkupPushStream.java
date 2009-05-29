@@ -5,6 +5,7 @@ import java.util.Iterator;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.textarea.Selection;
+import org.gjt.sp.jedit.textarea.TextArea;
 
 import pushstream.PushStream;
 import errorlist.DefaultErrorSource;
@@ -133,6 +134,8 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	public synchronized void add(PolyMarkup m) {
 		
 		PolyMLPlugin.debugMessage("\n\n"); 
+		PolyMLPlugin.debugMessage(m.toPrettyString()); 
+		PolyMLPlugin.debugMessage("\n\n"); 
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
 		
 		if(m.kind == PolyMarkup.KIND_COMPILE) {
@@ -148,7 +151,6 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			String fileName;
 			
 			Buffer buffer = jEdit.getBuffer(cr.fileName);
-			
 			
 			//String fileName = i.buffer.getPath();
 			//Buffer buffer = i.buffer;
@@ -197,7 +199,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 						} else {
 							errorKind = ErrorSource.WARNING;
 						}
-					
+						
 						errorSource.addError(new DefaultErrorSource.DefaultError(
 							errorSource, errorKind, fileName, line,
 							line_offset, end_offset, e.message));
@@ -217,8 +219,11 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			
 			// FIXME: deal with returned list of properties
 			// FIXME: synchronisation issue between getting buffer path and selecting right area in it?
-			if(jEdit.getActiveView().getBuffer().getPath() == lastCompile.fileName) {
-				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
+			TextArea a = jEdit.getActiveView().getTextArea();
+			Buffer b = jEdit.getActiveView().getBuffer();
+			
+			if(b.getPath().equals(lastCompile.fileName)) {
+				a.setSelection(new Selection.Range(l.start,l.end));
 			}
 		} else if(m.kind == PolyMarkup.KIND_TYPE_INFO) {
 			LocationResponse l = new LocationResponse(m);

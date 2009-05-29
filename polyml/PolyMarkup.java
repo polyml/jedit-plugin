@@ -19,8 +19,8 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	public final static int STATUS_INSIDE = 4;
 	public final static int STATUS_INSIDE_ESC = 5;
-	public final static int STATUS_INSIDE_IN_D = 6;
-	public final static int STATUS_INSIDE_ESC_IN_D = 7;
+	public final static int STATUS_INSIDE_SC = 6; // in semi colon field - final field
+	public final static int STATUS_INSIDE_ESC_IN_SC = 7; // 
 	//public final static int STATUS_INSIDE_IN_D2 = 8;
 	//public final static int STATUS_INSIDE_ESC_IN_D2 = 9;
 	
@@ -28,6 +28,8 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	public final static char OUTKIND_CANCEL = 'K';
 	
+	public final static char KIND_DEFAULT_FIELD = ';';
+
 	public final static char KIND_COMPILE = 'R';
 	public final static char KIND_PROPERTIES = 'O';
 	public final static char KIND_TYPE_INFO = 'T';
@@ -45,7 +47,6 @@ public class PolyMarkup implements PushStream<Character> {
 	List<PolyMarkup> fields; // when Markup is only content, this is null
 	String content; // when Markup is only fields, this is null
 	LinkedList<PolyMarkup> parents; // 
-	int dfieldcount = 0;
 
 	PushStream<PolyMarkup> markupStream;
 
@@ -120,10 +121,58 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	public void add(Character c, boolean isMore) { add(c); }
 	
+	
+	public void enterTag(char c) {
+		if(content != null) { // create new subtag with content
+			addToFields(new PolyMarkup(null,content));
+			content = null;
+		}
+		PolyMarkup parent = new PolyMarkup(kind,fields);
+		parents.addFirst(parent);
+		fields = null;
+		kind = new Character(c);
+		//System.err.println("new inside: " + kind + "; parent was: " + parent.kind);
+		status = STATUS_INSIDE;
+	}
+	
+	
+	public void endTag() {
+		//System.err.println("closing: " + kind);
+		PolyMarkup cur;
+		if(fields == null) {
+			if(content == null) { content = new String(); }
+			cur = new PolyMarkup(kind,content);
+		} else {
+			if(content != null) {
+				fields.add(new PolyMarkup(null,content));
+			}
+			cur = new PolyMarkup(kind,fields);
+		}
+		
+		//System.err.println("cur: " + cur.toPrettyString());
+
+		if(parents.isEmpty()) {
+			status = STATUS_COMPLETE;
+			// push on completed markup to markup stream
+			//System.err.println("addChar: status complete!: " + cur.toXMLString());
+			//PolyMLPlugin.debugBuffer.append(cur.toPrettyString());
+			markupStream.add(cur);
+			// if we close the last tag, we have completed parsing!
+			resetMarkup();
+		} else {
+			PolyMarkup oldParent = parents.removeFirst();
+			fields = oldParent.fields;
+			kind = oldParent.kind;
+			content = null;
+			addToFields(cur);
+			status = STATUS_INSIDE;
+		}
+	}
+	
 	// add a character to the markup seen so far
 	public void add(Character c) {
 		if(status == STATUS_OUTSIDE_ESC) {
-			if(c != 'D' && c >= 'A' && c <= 'Z') { // new tag, markup started!
+			if(c >= 'A' && c <= 'Z') { // new tag, markup started!
 				parents = new LinkedList<PolyMarkup>();
 				kind = new Character(c);
 				status = STATUS_INSIDE;
@@ -137,59 +186,18 @@ public class PolyMarkup implements PushStream<Character> {
 				status = STATUS_OUTSIDE_ESC;
 			}
 		} else if(status == STATUS_INSIDE) {
-			if(c == ESC) {
-				status = STATUS_INSIDE_ESC;
-			} else {
-				addToContent(c);
-			}
+			if(c == ESC) { status = STATUS_INSIDE_ESC; } 
+			else { addToContent(c); }
 		} else if(status == STATUS_INSIDE_ESC) {
-			if(c == 'D') {
-				status = STATUS_INSIDE_IN_D;
-				dfieldcount = 0;
-				addToContent('[');
+			if( c == KIND_DEFAULT_FIELD) { // new tag, markup started!
+				enterTag(c);
 			} else if( c >= 'A' && c <= 'Z') { // new tag, markup started!
-				if(content != null) { // create new subtag with content
-					addToFields(new PolyMarkup(null,content));
-					content = null;
-				}
-				PolyMarkup parent = new PolyMarkup(kind,fields);
-				parents.addFirst(parent);
-				fields = null;
-				kind = new Character(c);
-				//System.err.println("new inside: " + kind + "; parent was: " + parent.kind);
-				status = STATUS_INSIDE;
+				enterTag(c);
 			} else if ( c >= 'a' && c <= 'z' ) { // end tag
-				if(Character.toLowerCase(kind) == c) {
-					//System.err.println("closing: " + kind);
-					PolyMarkup cur;
-					if(fields == null) {
-						if(content == null) { content = new String(); }
-						cur = new PolyMarkup(kind,content);
-					} else {
-						if(content != null) {
-							fields.add(new PolyMarkup(null,content));
-						}
-						cur = new PolyMarkup(kind,fields);
-					}
-					
-					//System.err.println("cur: " + cur.toPrettyString());
-
-					if(parents.isEmpty()) {
-						status = STATUS_COMPLETE;
-						// push on completed markup to markup stream
-						//System.err.println("addChar: status complete!: " + cur.toXMLString());
-						//PolyMLPlugin.debugBuffer.append(cur.toPrettyString());
-						markupStream.add(cur);
-						// if we close the last tag, we have completed parsing!
-						resetMarkup();
-					} else {
-						PolyMarkup oldParent = parents.removeFirst();
-						fields = oldParent.fields;
-						kind = oldParent.kind;
-						content = null;
-						addToFields(cur);
-						status = STATUS_INSIDE;
-					}
+				if(kind == KIND_DEFAULT_FIELD) {
+					endTag(); endTag();
+				} else if(Character.toLowerCase(kind) == c) {
+					endTag();
 				} else {
 					System.err.println("addChar: STATUS_INSIDE_ESC: unexpected ESC char: " + c + "; within kind: " + kind);
 					status = STATUS_INSIDE;
@@ -204,31 +212,6 @@ public class PolyMarkup implements PushStream<Character> {
 				System.err.println("addChar: STATUS_INSIDE_ESC: unexpected ESC char: " + c + "; within kind: " + kind);
 				status = STATUS_INSIDE;
 			}
-		} else if(status == STATUS_INSIDE_IN_D ) {
-			if(c == ESC) {
-				status = STATUS_INSIDE_ESC_IN_D;
-			} else {
-				addToContent(c);
-			}
-		} else if(status == STATUS_INSIDE_ESC_IN_D) {
-			if(content == null) { content = new String(); }
-			if(c == ',') {
-				//dfieldcount ++;
-				//if(dfieldcount == 4) {
-				//	addToContent(']');
-				//} else {
-				//	content += c;
-				//}
-				addToContent(',');
-				status = STATUS_INSIDE_IN_D;
-			 } else if (c == ';'){
-				addToContent(']');
-				status = STATUS_INSIDE_IN_D;
-		} else if (c == 'd'){
-				status = STATUS_INSIDE;
-			} else {
-				System.err.println("addChar: STATUS_INSIDE_ESC_IN_D: unexpected ESC char: " + c);
-			}
 		} else if(status == STATUS_COMPLETE) {
 			System.err.println("addChar: called on PolyMarkup which is STATUS_COMPLETE");
 		} else {
@@ -236,34 +219,31 @@ public class PolyMarkup implements PushStream<Character> {
 		}
 	}
 	
-	public void ascifyDMarkup() {
-		System.err.print("kind: " + kind);
-		
-		if(kind != null && kind == 'D') {
-			System.err.print("fields: " + fields);
-			if(fields != null) {
-				Iterator<PolyMarkup> i = fields.iterator();
-				String location = i.next().getContent();
-				System.err.print("location: " + location);
-				String line = i.next().getContent();
-				String offset1 = i.next().getContent();
-				String offset2 = i.next().getContent();
-				
-				content = "[" + location + ":" + line + ":" + offset1 + "-" 
-				  + offset2 + "] ";
-				
-				System.err.print("content starts: " + content);
-				
-				while(i.hasNext()) {
-					PolyMarkup m2 = i.next();
-					m2.ascifyDMarkup();
-					content += m2.getContent();
+
+	public void recFlattenAllFieldsToContent() {
+		if(content == null) { content = new String(); }
+		if(fields != null) {
+			Iterator<PolyMarkup> i = fields.iterator();
+			content += "[";
+			while(i.hasNext()) {
+				PolyMarkup m2 = i.next();
+				m2.recFlattenAllFieldsToContent();
+				content += m2.getContent();
+				if(i.hasNext()) {
+					content += ",";
 				}
-				fields = null;
 			}
+			content += "]";
+			fields = null;
+		}
+	}
+	
+	public void recFlattenDefaultFieldsToContent() {
+		if(kind != null && kind == KIND_DEFAULT_FIELD) {
+			recFlattenAllFieldsToContent();
 		} else if(fields != null) {
 			for(PolyMarkup m2 : fields) {
-				m2.ascifyDMarkup();
+				m2.recFlattenDefaultFieldsToContent();
 			}
 		}
 	}

@@ -28,7 +28,6 @@ public class PolyMLError {
 	}
 	
 	public PolyMLError(PolyMarkup m) throws MarkupException{
-		
 		Iterator<PolyMarkup> i = m.getSubs().iterator();
 		String s = i.next().getContent();
 		if(s.length() != 1){ throw new MarkupException("PolyMLError: bad error kind length", m); }
@@ -44,9 +43,13 @@ public class PolyMLError {
 			
 			endPos = Integer.parseInt(i.next().getContent());
 			
-			//message = new String();
-			message = i.next().getContent();
+			PolyMarkup m2 = i.next();
+			m2.recFlattenDefaultFieldsToContent();
+			message = m2.getContent();
 			
+			if(message == null) {
+				throw new MarkupException("PolyMLError: null message given", m);
+			}
 		} else {
 			throw new MarkupException("PolyMLError: bad error kind", m);
 		}

@@ -90,7 +90,7 @@ structure IDE
               handle Path => NONE 
                   (* Different volumes: can't make relative path. *)
                    | OS.SysErr _ => NONE (* If fileName doesn't actually exist. *)
-        val _ = print ("\n filePathRelativeToRoot: " ^ 
+        val _ = print ("\nprojectUse: filePathRelativeToRoot: " ^ 
         (case filePathRelativeToRoot of NONE => "NONE" | SOME s => s) ^ "\n");
       in
         case filePathRelativeToRoot of
@@ -102,8 +102,8 @@ structure IDE
             val saveFile =
                 OS.Path.mkCanonical (OS.Path.joinBaseExt{ base = baseName, ext = SOME "save"})
                 
-            val _ = print ("\nbaseName: " ^ baseName ^ "\n");
-            val _ = print ("\nsaveFile: " ^ saveFile ^ "\n");
+            val _ = print ("\nprojectUse: baseName: " ^ baseName ^ "\n");
+            val _ = print ("\nprojectUse: saveFile: " ^ saveFile ^ "\n");
             
             (* Reset the save directory before we save so that it isn't set 
                in the saved state.  That means that "use" won't save the state
@@ -140,7 +140,8 @@ structure IDE
       (* First in list is the name with no suffix. *)
       val (inStream, fileName) = trySuffixes("" :: ! PolyML.suffixes)
       val fullfileName = OS.FileSys.fullPath fileName;
-    
+      val _ = print ("\n fullfileName: " ^ fullfileName ^ "\n");
+
       val () = preUse fullfileName
     in
       PolyML.use fullfileName (* Now call the underlying use to do the work. *)
