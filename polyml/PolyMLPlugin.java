@@ -38,6 +38,8 @@ import errorlist.ErrorSource;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
+import javax.swing.JOptionPane;
+
 /**
  * Plugin class the PolyML Plugin for jedit.
  * 
@@ -109,9 +111,10 @@ public class PolyMLPlugin extends EBPlugin {
 	public static List<String> getPolyIDECmd() {
 		String s = jEdit.getProperty(PROPS_POLY_IDE_COMMAND);
 		List<String> cmd = new LinkedList<String>();
-		for (String s2 : s.split(" ")) {
-			cmd.add(s2);
-		}
+		//for (String s2 : s.split(" ")) {
+		//	cmd.add(s2);
+		//}
+		cmd.add(s);
 		return cmd;
 	}
 
@@ -147,8 +150,8 @@ public class PolyMLPlugin extends EBPlugin {
 			polyMLProcess.restartProcess();
 			return true;
 		} catch (IOException e) {
-			System.err.println("PolyMLPlugin: Failed to restart PolyML!");
-			e.printStackTrace();
+			// System.err.println("PolyMLPlugin: Failed to restart PolyML!");
+			// e.printStackTrace();
 			polyMLProcess = null;
 			return false;
 		}
@@ -161,10 +164,22 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	static public void sendBufferToPolyML(Buffer b, EditPane e) {
 		//errorSource.clear();
+		if(jEdit.getActiveView().getBuffer() != b) {
+			System.err.print("Action Script oddity! buffer is not the active buffer! Will use the active buffer instead.");
+			b = jEdit.getActiveView().getBuffer();
+		}
+		
 		errorSource.removeFileErrors(b.getPath());
 		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
-		polyMLProcess.sendCompileBuffer(b, e);
+		
+		if(polyMLProcess != null || restartPolyML()) {
+			polyMLProcess.sendCompileBuffer(b, e);
+		} else {
+			JOptionPane.showMessageDialog(null, "Failed to (re)start PolyML from command: " 
+					+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND) + "\nChange the command in the Plugin Options menu", 
+					"PolyML not running", JOptionPane.WARNING_MESSAGE);
+		}
 	}
 
 	/**
@@ -341,7 +356,7 @@ public class PolyMLPlugin extends EBPlugin {
 	public void usingShellBufferTextArea(EditPane editPane) {
 		Buffer b = editPane.getBuffer();
 		ShellBuffer s = shellBufferOfBuffer(b);
-		System.err.println("usingShellBufferTextArea");
+		//System.err.println("usingShellBufferTextArea");
 		if (s != null) {
 			s.showInTextArea(editPane.getTextArea());
 		}

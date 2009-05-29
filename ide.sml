@@ -26,6 +26,14 @@
 structure IDE 
 = struct
 
+  val basicUse = PolyML.use;
+
+  val projectDirRef = ref "";
+  val saveSubDirRef = ref ".polysave";
+
+  fun setProjectDir s = (OS.FileSys.chDir s; projectDirRef := s);
+  fun setSaveSubDir s = (saveSubDirRef := s);
+
   fun createDirs path =
   if path = "" orelse (OS.FileSys.isDir path handle OS.SysErr _ => false)
   then ()
@@ -38,38 +46,27 @@ structure IDE
     within that directory.
     
     It is called by overiding use e.g.
-      val use = IDE.use ".polysave"
+      val use = IDE.projectUse ".polysave" "/home/ldixon/myproject"
     to define a version of "use" for the rest of the compilation.
   *)
-  fun use saveDirName =
+  fun projectUse saveSubDir projectDir =
   let
-    (* Get the root directory and save directory (typically .polysave).  
-       Do this once when this function is called and convert them to absolute
-       paths using the current directory when this is called.
-       Assume that the root directory is the parent of the save directory.
-       N.B. Because the directory may not yet exist we can't use
-       OS.FileSys.fullPath. *)
-    val {dir = nonFullRootPath, file=saveDirLastDirName} = 
-      OS.Path.splitDirFile (OS.Path.mkAbsolute 
-        { path = saveDirName, relativeTo = OS.FileSys.getDir() });
-    
     (* The root directory is the directory that is assumed to be the root of 
        the project. For each source file within this directory with path a/b/c.ML
-       there will be a corresponding saved state file .polysave/a/b/c.ML .
+       there will be a corresponding saved state file projectDir/saveSubDir/a/b/c.ML .
        If "use" is called on a file that is not within the root directory no
        information will be saved for that file. *)
-    val rootPath = OS.FileSys.fullPath nonFullRootPath;
+    val rootPath = OS.FileSys.fullPath projectDir;
     
-    val saveDirPath = 
-      OS.Path.joinDirFile {dir = rootPath, file = saveDirLastDirName}
+    (* Get the root directory and save directory (typically .polysave).  
+       Assumes root directory is the parent of the save directory. *)
+    val fullSaveDirPath = 
+      OS.Path.joinDirFile {dir = rootPath, file = saveSubDir}
     
-    val _ = print ("\n saveDirName: " ^ saveDirName ^ "\n");
-    val _ = print ("\n OS.FileSys.getDir(): " ^ (OS.FileSys.getDir()) ^ "\n");
+    val _ = print ("projectUse: saveSubDir: " ^ saveSubDir ^ "\n");    
+    val _ = print ("projectUse: rootPath: " ^ rootPath ^ "\n");
+    val _ = print ("projectUse: fullSaveDirPath: " ^ fullSaveDirPath ^ "\n");
     
-    val _ = print ("\n saveDirPath: " ^ saveDirPath ^ "\n");
-
-    val _ = print ("\nrootPath: " ^ rootPath ^ "\n");
-
     fun preUse fileName =
        let
         (* Create a directory hierarchy. *)
@@ -78,9 +75,8 @@ structure IDE
         val fullFileName = OS.FileSys.fullPath fileName
         val pathFromRoot = OS.Path.mkRelative { path = fullFileName, 
                                                 relativeTo = rootPath }
-        val _ = print ("\n fullFileName: " ^ fullFileName ^ "\n");
-        val _ = print ("\n fullFileName: " ^ rootPath ^ "\n");
-        val _ = print ("\n pathFromRoot: " ^ pathFromRoot ^ "\n");
+        val _ = print ("projectUse: fullFileName: " ^ fullFileName ^ "\n");
+        val _ = print ("projectUse: pathFromRoot: " ^ pathFromRoot ^ "\n");
                                   
         val filePathRelativeToRoot =
             (* Is the file in the root directory or a sub-directory or is it in
@@ -101,7 +97,7 @@ structure IDE
           NONE => () (* Do nothing: we can't save it. *)
         |   SOME fileName =>
           let
-            val baseName = OS.Path.joinDirFile { dir = saveDirPath, file = fileName }
+            val baseName = OS.Path.joinDirFile { dir = fullSaveDirPath, file = fileName }
               
             val saveFile =
                 OS.Path.mkCanonical (OS.Path.joinBaseExt{ base = baseName, ext = SOME "save"})
@@ -143,11 +139,34 @@ structure IDE
           handle IO.Io _ => trySuffixes l
       (* First in list is the name with no suffix. *)
       val (inStream, fileName) = trySuffixes("" :: ! PolyML.suffixes)
+      val fullfileName = OS.FileSys.fullPath fileName;
     
-      val () = preUse fileName
+      val () = preUse fullfileName
     in
-      PolyML.use fileName (* Now call the underlying use to do the work. *)
+      PolyML.use fullfileName (* Now call the underlying use to do the work. *)
     end
   end;
+  
+  fun use n = projectUse (!saveSubDirRef) (! projectDirRef ) n;
+  
+  fun onload load = 
+    let val p = !projectDirRef;
+        val s = !saveSubDirRef;
+    in (load(); projectDirRef := p; saveSubDirRef := s) end;
+  
 end; (* struct *)
+
+(* add IDE and modified use to PolyML *)
+structure PolyML = 
+struct
+structure IDE = IDE;
+open PolyML;
+val use = IDE.use;
+end;
+
+(* make sure IDE refs are not re-set by heap loading *)
+PolyML.onLoad IDE.onload;
+
+(* define top level use function *)
+val use = PolyML.use;
 

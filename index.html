@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <title></title>
+  <title>The jEdit PolyML Plugin</title>
 
 
   <style type="text/css">
@@ -17,44 +17,178 @@ code { font-family: Courier New,Courier,monospace;
 
 <h2>About</h2>
 
+<p>
 The JEdit PolyML Plugin provides <a href="http://www.jedit.org/">JEdit</a>
 with features for editing, compiling, and examining SML Code.
 &nbsp;It requires that <a href="http://www.polyml.org/">PolyML</a>
-5.3 or later is installed. The plugin and PolyML IDE mode has been developed and is being
+5.3 or later is installed. The plugin and PolyML IDE mode has been
+developed and is being
 supported by <a href="http://homepages.inf.ed.ac.uk/ldixon/">Lucas
-Dixon</a> and David Matthews. The project is open-source, under the <a href="http://www.gnu.org/copyleft/lesser.html">GNU Lesser General Public License</a>, and is hosted by sourceforge at <a href="http://sourceforge.net/projects/polyml/">http://sourceforge.net/projects/polyml/</a> <br>
+Dixon</a> and David Matthews. The project is open-source, under
+the <a href="http://www.gnu.org/copyleft/lesser.html">GNU
+Lesser General Public License</a>, and is hosted by sourceforge
+at <a href="http://sourceforge.net/projects/polyml/">http://sourceforge.net/projects/polyml/</a>
+</p>
 
 <h2>Installing</h2>
 
-The plugin is a self-contained jar file, but assumes you have installed
+<p>The plugin is a self-contained jar file, but assumes you have
+installed
 <a href="http://www.jedit.org/">jEdit</a> (tested on
 version 4.3 pre 16) as well as <a href="http://www.polyml.org/">PolyML</a>
-(tested with version 5.3). Currently, it also uses the jEdit <a href="http://plugins.jedit.org/plugins/?ErrorList">ErrorList plugin</a>, so you will need to install that first. This can be done easily using the Plugin Manager within jEdit. <br>
+(tested with version 5.3). Currently, it also uses the jEdit <a href="http://plugins.jedit.org/plugins/?ErrorList">ErrorList
+plugin</a>, so you will need to install that first. This can be
+done easily using the Plugin Manager within jEdit. <br>
+
 <br>
+
 To install the PolyML plugin, you need to place it into
-either your jEdit's "<code>jars</code>" subdirectory of its install directory, or your user account's jEdit "<code>jars</code>" subdirectory - in unix systems this is "<code>.jedit/jars</code>". When you then startup jEdit you should have a new menu item within the&nbsp;<code>Plugins</code> menu called&nbsp;<code>PolyML-Plugin</code>. <br>
+either your jEdit's "<code>jars</code>" subdirectory of its
+install directory, or your user account's jEdit "<code>jars</code>"
+subdirectory - in unix systems this is "<code>.jedit/jars</code>".
+When you then startup jEdit you should have a new menu item within
+the&nbsp;<code>Plugins</code> menu called&nbsp;<code>PolyML-Plugin</code>.
+</p>
+
 <h2>Features of the Plugin</h2>
+
 <h3>Shell buffer</h3>
+
+<p>
 The shell buffer gives you a terminal within a buffer much like emacs
 shell mode. Within this buffer there is a prompt and all text after the
 prompt is considered as input and can be sent to the underlying
 (PolyML) process. All output from the underlying PolyML process is
 printed at the start of the shell-prompt. You have all the normal
 editing tools for that buffer.&nbsp;<br>
+
+</p>
+
 <h3>PolyML IDE protocol</h3>
-The PolyML Plugin provide a method to interact with PolyML's IDE protocol. This allows:<br>
+
+<p>The PolyML Plugin provide a method to interact with PolyML's
+IDE
+protocol. This allows:<br>
+
+</p>
+
 <ul>
-  <li>the parsing/type-checking/evaluation of buffers by ML. Error
+
+  <li>the parsing/type-checking/evaluation of buffers by ML.
+Error
 messages and warnings displayed in the ErrorList panel, provided by the
 ErrorList plugin;</li>
+
   <li>get the type of a value;</li>
-  <li>get the location where a value is declared, the structure in
+
+  <li>get the location where a value is declared, the structure
+in
 which it is defined, and if it has been introduced by an open, you can
 also get the location of the open statement;</li>
+
   <li>the user can move around the parse-tree.</li>
+
 </ul>
-These functions are all available from the PolyML-Plugin sub-menu of
+
+<p>These functions are all available from the PolyML-Plugin
+sub-menu of
 the Plugins menu. You can assign the functions useful shortcuts from
 jEdit's Global Options (in the Utilities menu).
+</p>
+
+<h3>Project IDE structure and heaps</h3>
+
+<p>
+The jEdit plugin compiles a small ML file the first time the IDE
+protocol is started (see ide.sml, inside the project jar file). This
+defines a structure&nbsp;<span style="font-family: Courier New,Courier,monospace;">IDE</span>,
+which as well as being at the top level, also exists in the <span style="font-family: Courier New,Courier,monospace;">PolyML</span>
+structure. This also re-defines the use function to do a little project
+management. <br>
+
+<br>
+
+Whenever a new ML file is run, jEdit searches for a&nbsp;<span style="font-family: Courier New,Courier,monospace;">.polysave</span>
+in the current path and then in any parent path. If jEdit finds the <span style="font-family: Courier New,Courier,monospace;">.polysave</span>directory,
+then the location of the&nbsp;<span style="font-family: Courier New,Courier,monospace;">.polysave</span>
+directory is considered to be the project directory. Whenever a <span style="font-family: Courier New,Courier,monospace;">use</span>
+statement is made in ML and the file being used is within the project
+directory, a saved heap file is stored in the&nbsp; <span style="font-family: Courier New,Courier,monospace;">.polysave</span>
+directory. Whenever a file is checked, it is done so from the last
+saved heap file, if there is one. If there is no project directory, a
+new&nbsp;<span style="font-family: Courier New,Courier,monospace;">.polysave</span>
+is created in location of the run ML file. If there is a project
+directory, but no heap file, ML uses the IDE heap file as the starting
+heap.<br>
+
+<br>
+
+You can delete the&nbsp;<span style="font-family: Courier New,Courier,monospace;">.polysave</span>
+directory to reset or change the project directory. <br>
+
+</p>
+
+<h4>Details of the Project IDE structure</h4>
+
+<p>
+The old use function is still available as <span style="font-family: Courier New,Courier,monospace;">IDE.basicUse</span><code></code>.
+<span style="font-family: Courier New,Courier,monospace;"></span><br>
+
+<br>
+
+There are two important variables in the IDE structure for project
+management: <br>
+
+<br>
+
+<span style="font-family: Courier New,Courier,monospace;">IDE.projectDirRef
+: string ref</span><br>
+
+This holds a string for the current project directory.&nbsp; <br>
+
+<span style="font-family: Courier New,Courier,monospace;"><br>
+
+IDE.saveSubDirRef : string ref</span><br>
+
+<span style="font-family: Courier New,Courier,monospace;"></span>This
+holds a string that identifies the save directory, where saved project
+heap files are places and is a relative path name from
+the&nbsp;project directory. By default this is set to&nbsp;<span style="font-family: Courier New,Courier,monospace;">".polysave"</span>.
+Note that these references are maintained by onLoad so will not be
+changed by subsiquent loading of heaps. <br>
+
+<br>
+
+There is also a function&nbsp;<span style="font-family: Courier New,Courier,monospace;">setProjectDir</span>
+takes a string a sets the&nbsp;<span style="font-family: Courier New,Courier,monospace;">projectDirRef</span>
+as well as the changing current working directory for ML to the project
+directory. <br>
+
+<br>
+
+The idea is that within a project's directory there is a saved state
+directory which holds the state right before each file is used. This
+way a file can be re-run and checked for errors quickly. We avoid
+having to start from the very first ML file each time.<br>
+
+<br>
+
+The modified <span style="font-family: Courier New,Courier,monospace;">use</span>
+function saves a copy of the current ML state within the save
+subdirectory before a file is used. For example is working in a project
+which has a&nbsp; directory <span style="font-family: Courier New,Courier,monospace;">/home/username/p
+</span>and writing: <br>
+
+<br>
+
+<span style="font-family: Courier New,Courier,monospace;">use
+"b/c.ML";<br>
+
+<br>
+
+</span>will create a saves state:&nbsp;<span style="font-family: Courier New,Courier,monospace;">/home/username/p/.polysave/b/c.ML.save</span>
+which hold the PolyML state just before the use statement was called.
+</p>
+
 </body>
 </html>

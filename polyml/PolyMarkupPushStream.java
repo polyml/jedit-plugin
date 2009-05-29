@@ -139,12 +139,16 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			CompileResult r = new CompileResult(m);
 			
 			CompileRequest cr = compileInfos.compileCompleted(r);
-			errorSource.removeFileErrors(cr.fileName);
+			// have to use strange long name because errorSOurce indexes by object not string.
+			
 			synchronized(cr) {
 				cr.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
-			String fileName = cr.fileName;
+			
+			String fileName;
+			
 			Buffer buffer = jEdit.getBuffer(cr.fileName);
+			
 			
 			//String fileName = i.buffer.getPath();
 			//Buffer buffer = i.buffer;
@@ -154,10 +158,21 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				buffer = jEdit.openFile(null, cr.fileName);
 				if(buffer == null) {
 					System.err.println("cannot open: " +  cr.fileName);
+					fileName = cr.fileName;
+				} else {
+					fileName = buffer.getPath();
 				}
+			} else {
+				fileName = buffer.getPath();
 			}
-						
-			if(r.isBug() || buffer == null) {
+			
+			errorSource.removeFileErrors(fileName);
+	
+			if(r.isSuccess()){
+				errorSource.addError(new DefaultErrorSource.DefaultError(
+						errorSource, ErrorSource.WARNING, fileName, 0,
+						0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
+			} else if(r.isBug() || buffer == null) {
 				errorSource.addError(new DefaultErrorSource.DefaultError(
 						errorSource, ErrorSource.ERROR, fileName, 0,
 						0, 0, "BUG: Failed to check, or have null buffer."));
@@ -190,15 +205,12 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 					} catch(java.lang.ArrayIndexOutOfBoundsException ex) {
 						ex.printStackTrace();
 					}
-					
 				}
-			}
-			
-			if(r.isSuccess()){
 				errorSource.addError(new DefaultErrorSource.DefaultError(
 						errorSource, ErrorSource.WARNING, fileName, 0,
-						0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
+						0, 0, "Compilation had errors of kind: " + r.status + " (parse id: " + r.parseID + ")"));
 			}
+			
 		} else if(m.kind == PolyMarkup.KIND_PROPERTIES) {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest lastCompile = compileInfos.getFromParseID(l.parseID);

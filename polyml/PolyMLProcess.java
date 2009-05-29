@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.zip.ZipFile;
 
+import javax.swing.JOptionPane;
+
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
 import org.gjt.sp.jedit.jEdit;
@@ -89,7 +91,7 @@ public class PolyMLProcess {
 		//pendingCompiles = new LinkedList<CompileRequest>();
 		polyProcessCmd = new LinkedList<String>();
 		polyProcessCmd.add("poly");
-		polyProcessCmd.add("--ideprotocol --with-markup");
+		//polyProcessCmd.add("--ideprotocol --with-markup");
 	}
 
 
@@ -199,11 +201,16 @@ public class PolyMLProcess {
 		System.err.println("restartProcessFromCmd:" + polyProcessCmd);
 
 		ProcessBuilder pb = new ProcessBuilder(polyProcessCmd);
+		if(pb == null) {
+			System.err.println("PolyMLProcess:" + "Failed to start process: "
+					+ polyProcessCmd);
+			return;
+		}
 		pb.redirectErrorStream(true);
 		try {
 			System.err.println("PolyMLProcess:" + "start called: " + polyProcessCmd);
 			process = pb.start();
-
+			
 			reader = new DataInputStream(process.getInputStream());
 			writer = new DataOutputStream(process.getOutputStream());
 
@@ -218,6 +225,9 @@ public class PolyMLProcess {
 			//polyListener = new InputStreamThread(reader, new PolyMarkup(errorPushStream));
 			
 			polyListener.start();
+			
+			// get poly to start in IDE protocol mode
+			sendToPoly("PolyML.IDEInterface.runIDEProtocol();");
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
 					+ polyProcessCmd);
@@ -507,22 +517,20 @@ public class PolyMLProcess {
 			preSetupString += "let val p = ! PolyML.IDEInterface.parseTree in \n" +
 					"(PolyML.SaveState.loadState \"" + heap + "\"; \n" +
 					" PolyML.IDEInterface.parseTree := p) end; \n";
-			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";\n";
+			preSetupString += "IDE.setProjectDir \"" + projectPath + "\";\n";
 		} else if(checkAndCreatePolyIDE()) {  // else try default heap
 			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";\n";
-			preSetupString += "val use = IDE.use \"" + projectPath + File.separator + ".polysave\";\n";
+			preSetupString += "IDE.setProjectDir \"" + projectPath + "\";\n";
 		} else {
 			// no heap means that we are not setup for IDE use;
+			errorSource.removeFileErrors(b.getPath());
 			errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 					ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
 			return;
 		}
 		
-		preSetupString += "OS.FileSys.chDir \"" + projectPath + "\";\n";
-
 		System.err.println("\nML Prelude: \n " + preSetupString + "\n;\n");
 		
-		errorSource.removeFileErrors(b.getPath());
 		sendCompileRequest(new CompileRequest(preSetupString, b.getPath(), src));
 	}
 

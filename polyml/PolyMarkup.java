@@ -213,16 +213,17 @@ public class PolyMarkup implements PushStream<Character> {
 		} else if(status == STATUS_INSIDE_ESC_IN_D) {
 			if(content == null) { content = new String(); }
 			if(c == ',') {
-				dfieldcount ++;
-				if(dfieldcount == 4) {
-					addToContent(']');
-				} else {
-					content += c;
-				}
+				//dfieldcount ++;
+				//if(dfieldcount == 4) {
+				//	addToContent(']');
+				//} else {
+				//	content += c;
+				//}
+				addToContent(',');
 				status = STATUS_INSIDE_IN_D;
-			// } else if (c == ';'){
-			//	addToContent(']');
-			//	status = STATUS_INSIDE_IN_D;
+			 } else if (c == ';'){
+				addToContent(']');
+				status = STATUS_INSIDE_IN_D;
 		} else if (c == 'd'){
 				status = STATUS_INSIDE;
 			} else {
