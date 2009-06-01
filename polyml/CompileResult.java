@@ -60,23 +60,42 @@ public class CompileResult {
 						|| status == STATUS_CANCEL)){
 					throw new MarkupException("CompileResult:bad status", m);
 				}
-
+				
 				// get offset to parsed point
 				s = i.next().getContent();
 				// convert ML minus to standard minus, so that integer can be parsed. 
 				String s2 = s.replace('~', '-');
 				finalOffset = Integer.parseInt(s2);
 				
-				if (status == STATUS_EXCEPTION_RAISED) {
-					String exception_message = i.next().getContent();
-					errors.add(new PolyMLError(PolyMLError.KIND_EXCEPTION, finalOffset, finalOffset, exception_message));
-				} else if (status == STATUS_PRELUDE_FAILED) {
-					String error_reason = i.next().getContent();
+				// should be in ";" tag 
+				PolyMarkup finalMarkup = i.next();
+				
+				if (status == STATUS_PRELUDE_FAILED) {
+					finalMarkup.recFlattenDefaultFieldsToContent();
+					String error_reason = finalMarkup.getContent();
 					errors.add(new PolyMLError(PolyMLError.KIND_PRELUDE_FAILURE, 0, 0, error_reason));
-				} else if(status == STATUS_PARSE_FAILED
-						|| status == STATUS_TYPECHECK_FAILED) {
-					while (i.hasNext()) {
-						PolyMarkup m2 = i.next();
+				} else if(finalMarkup.getSubs() != null){
+					
+					Iterator<PolyMarkup> i2;
+					i2 = finalMarkup.getSubs().iterator();
+					
+					if (status == STATUS_EXCEPTION_RAISED) {
+						// into first "X" subtag
+						PolyMarkup m2 = i2.next();
+						m2.recFlattenAllFieldsToContent();
+						String exception_message = m2.getContent();
+						
+						if(exception_message == null) {
+							System.err.println("null exception message; m: " + m.toPrettyString() 
+									+ "\n m2:" + m2.toPrettyString());
+						} else {
+							errors.add(new PolyMLError(PolyMLError.KIND_EXCEPTION, finalOffset, finalOffset, exception_message));
+						}
+					} 
+					
+					// create error list, all other status kinds may have lists of errors
+					while (i2.hasNext()) {
+						PolyMarkup m2 = i2.next();
 						if (m2.getKind() == 'E') {
 							try {
 								errors.add(new PolyMLError(m2));
@@ -84,15 +103,13 @@ public class CompileResult {
 								System.err.print("Cannot create error, bad markup: \n" 
 										+ m2.toPrettyString());
 							}
-						
+
 						} else {
 							throw new MarkupException(
 									"CompileResult:un-expected kind: " + m2.getKind(), m2);
 						}
 					}
 				}
-
-
 				
 			} catch (MarkupException e) {
 				e.printMarkupException();

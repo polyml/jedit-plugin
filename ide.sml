@@ -63,9 +63,9 @@ structure IDE
     val fullSaveDirPath = 
       OS.Path.joinDirFile {dir = rootPath, file = saveSubDir}
     
-    val _ = print ("projectUse: saveSubDir: " ^ saveSubDir ^ "\n");    
-    val _ = print ("projectUse: rootPath: " ^ rootPath ^ "\n");
-    val _ = print ("projectUse: fullSaveDirPath: " ^ fullSaveDirPath ^ "\n");
+    val _ = print ("projectUse1: saveSubDir: " ^ saveSubDir ^ "\n");    
+    val _ = print ("projectUse2: rootPath: " ^ rootPath ^ "\n");
+    val _ = print ("projectUse3: fullSaveDirPath: " ^ fullSaveDirPath ^ "\n");
     
     fun preUse fileName =
        let
@@ -75,8 +75,8 @@ structure IDE
         val fullFileName = OS.FileSys.fullPath fileName
         val pathFromRoot = OS.Path.mkRelative { path = fullFileName, 
                                                 relativeTo = rootPath }
-        val _ = print ("projectUse: fullFileName: " ^ fullFileName ^ "\n");
-        val _ = print ("projectUse: pathFromRoot: " ^ pathFromRoot ^ "\n");
+        val _ = print ("projectUse4: fullFileName: " ^ fullFileName ^ "\n");
+        val _ = print ("projectUse5: pathFromRoot: " ^ pathFromRoot ^ "\n");
                                   
         val filePathRelativeToRoot =
             (* Is the file in the root directory or a sub-directory or is it in
@@ -90,7 +90,7 @@ structure IDE
               handle Path => NONE 
                   (* Different volumes: can't make relative path. *)
                    | OS.SysErr _ => NONE (* If fileName doesn't actually exist. *)
-        val _ = print ("\nprojectUse: filePathRelativeToRoot: " ^ 
+        val _ = print ("\nprojectUse6: filePathRelativeToRoot: " ^ 
         (case filePathRelativeToRoot of NONE => "NONE" | SOME s => s) ^ "\n");
       in
         case filePathRelativeToRoot of
@@ -102,8 +102,8 @@ structure IDE
             val saveFile =
                 OS.Path.mkCanonical (OS.Path.joinBaseExt{ base = baseName, ext = SOME "save"})
                 
-            val _ = print ("\nprojectUse: baseName: " ^ baseName ^ "\n");
-            val _ = print ("\nprojectUse: saveFile: " ^ saveFile ^ "\n");
+            val _ = print ("projectUse7: baseName: " ^ baseName ^ "\n");
+            val _ = print ("projectUse8: saveFile: " ^ saveFile ^ "\n");
             
             (* Reset the save directory before we save so that it isn't set 
                in the saved state.  That means that "use" won't save the state
@@ -140,12 +140,14 @@ structure IDE
       (* First in list is the name with no suffix. *)
       val (inStream, fileName) = trySuffixes("" :: ! PolyML.suffixes)
       val fullfileName = OS.FileSys.fullPath fileName;
-      val _ = print ("\n fullfileName: " ^ fullfileName ^ "\n");
+      val _ = print ("projectUse9: fullfileName: " ^ fullfileName ^ "\n");
 
       val () = preUse fullfileName
     in
       PolyML.use fullfileName (* Now call the underlying use to do the work. *)
+      (* handle IO.Io d => raise IO.Io d; *)
     end
+    
   end;
   
   fun use n = projectUse (!saveSubDirRef) (! projectDirRef ) n;

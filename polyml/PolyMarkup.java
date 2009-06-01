@@ -248,6 +248,17 @@ public class PolyMarkup implements PushStream<Character> {
 		}
 	}
 	
+	
+	public void recFlattenUnderTagToContent(char k) {
+		if(kind != null && kind == k) {
+			recFlattenAllFieldsToContent();
+		} else if(fields != null) {
+			for(PolyMarkup m2 : fields) {
+				m2.recFlattenUnderTagToContent(k);
+			}
+		}
+	}
+	
 	// NOTE: interesting case for generic inefficiency in imperative languages: 
 	// end up with hasPrev set each time in the loop - but only needed once. 
 	public String toString() {

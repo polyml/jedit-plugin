@@ -513,12 +513,15 @@ public class PolyMLProcess {
 
 		// load heap if there is one to be loaded
 		String heap = searchForBufferHeapFile(b);
+		boolean haveIDEHeap = checkAndCreatePolyIDE();
+		// FIXME: tell user when there heap is older than the IDE heap 
+		// - they may have the wrong use function.
 		if (heap != null) {
 			preSetupString += "let val p = ! PolyML.IDEInterface.parseTree in \n" +
 					"(PolyML.SaveState.loadState \"" + heap + "\"; \n" +
 					" PolyML.IDEInterface.parseTree := p) end; \n";
 			preSetupString += "IDE.setProjectDir \"" + projectPath + "\";\n";
-		} else if(checkAndCreatePolyIDE()) {  // else try default heap
+		} else if(haveIDEHeap) {  // else try default heap
 			preSetupString += "PolyML.SaveState.loadState \"" + ideHeapFile + "\";\n";
 			preSetupString += "IDE.setProjectDir \"" + projectPath + "\";\n";
 		} else {
@@ -527,6 +530,11 @@ public class PolyMLProcess {
 			errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 					ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
 			return;
+		}
+		
+		// if set to run from file's dir - change to it. 
+		if(Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR))) {
+			preSetupString += "OS.FileSys.chDir \"" + b.getDirectory() + "\";\n";
 		}
 		
 		System.err.println("\nML Prelude: \n " + preSetupString + "\n;\n");

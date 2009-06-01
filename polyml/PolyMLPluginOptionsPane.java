@@ -50,6 +50,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	private JTextArea shellPrompt;
 	/** */
 	private JCheckBox outputToDebugBuffer;
+	private JCheckBox useFileDir;
 	
 	/**
 	 * Default constructor. Note that the name is important!
@@ -71,6 +72,12 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		//p = createLabelledComponent(, outputToDebugBuffer);
 		addComponent(outputToDebugBuffer);
 		
+		useFileDir = new JCheckBox("Start ML from the files directory? \n" +
+				" (otherwise starts polyML from a file's project directory.)", 
+				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR)));
+		//p = createLabelledComponent(, outputToDebugBuffer);
+		addComponent(useFileDir);
+		
 		polyideCommand = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 3, 50);
 		p = createLabelledComponent("PolyML IDE Command: ", polyideCommand);
 		addComponent(p);
@@ -90,6 +97,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	 */
 	public void _save() {
 		jEdit.setProperty(PolyMLPlugin.PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER, String.valueOf(outputToDebugBuffer.isSelected()));
+		jEdit.setProperty(PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR, String.valueOf(useFileDir.isSelected()));
 		jEdit.setProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND, polyideCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_COMMAND, shellCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_PROMPT, shellPrompt.getText());

@@ -111,7 +111,7 @@ options.polyml-options.filepath=
 
 ### default jedit property for preferences, saved and edit by ShellBufferOptionPane
 # must be same as: PolyMLPlugin.PROPS_POLY_IDE_COMMAND
-options.polyml.polyide_command=poly --ideprotocol
+options.polyml.polyide_command=poly
 
 # must be same as: PolyMLPlugin.PROPS_SHELL_COMMAND
 options.polyml.shell_command=poly
@@ -124,3 +124,6 @@ options.polyml.max_history=50
 
 # must be same as: PolyMLPlugin.PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER
 options.polyml.copy_output_to_debug_buffer=true
+
+# must be same as: PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR
+options.polyml.run_from_file_dir=true
