@@ -30,12 +30,11 @@ plugin.polyml.PolyMLPlugin.name=PolyML-Plugin
 
 # Other stuff for jEdit
 plugin.polyml.PolyMLPlugin.author = Lucas Dixon
-plugin.polyml.PolyMLPlugin.version = 0.1.0
+plugin.polyml.PolyMLPlugin.version = 00.01.00.00
 plugin.polyml.PolyMLPlugin.description = A Plugin for PolyML
 plugin.polyml.PolyMLPlugin.depend.0 = jedit 04.03.00.00
-plugin.polyml.PolyMLPlugin.depend.1 = plugin console.ConsolePlugin 4.3.4
-plugin.polyml.PolyMLPlugin.depend.2 = jdk 1.5
-plugin.polyml.PolyMLPlugin.depend.3 = plugin errorlist.ErrorListPlugin 1.7
+plugin.polyml.PolyMLPlugin.depend.1 = jdk 1.5
+plugin.polyml.PolyMLPlugin.depend.2 = plugin errorlist.ErrorListPlugin 1.7
 
 plugin.polyml.PolyMLPlugin.docs = index.html
 
