@@ -82,7 +82,14 @@
 	</ACTION>
 	
 	<!-- *************************************************************** -->
-	
+	<ACTION NAME="polyml-menu.mitem-test">
+    <CODE>
+    polyml.PolyMLPlugin.test();
+    </CODE>
+  </ACTION>
+  
+  <!-- *************************************************************** -->
+  
 	<ACTION NAME="polyml-menu.mitem-new">
 		<CODE>
 		polyml.PolyMLPlugin.newShellBuffer();

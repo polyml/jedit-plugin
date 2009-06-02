@@ -64,7 +64,7 @@ public class PolyMLPlugin extends EBPlugin {
 	static DefaultErrorSource errorSource;
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
-	static Class<jEdit> jEditGUILock;
+	static PolyMLPlugin jEditGUILock;
 
 	public PolyMLPlugin() {
 		super();
@@ -72,7 +72,7 @@ public class PolyMLPlugin extends EBPlugin {
 		errorSource = null;
 		polyMLProcess = null;
 		debugBuffer = null;
-		jEditGUILock = jEdit.class;
+		jEditGUILock = this;
 		System.err.println("PolyMLPlugin: started!");
 	}
 
@@ -102,7 +102,9 @@ public class PolyMLPlugin extends EBPlugin {
 			if (Boolean.parseBoolean(jEdit
 					.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
 				if (debugBuffer == null) {
+					// creates a new buffer in the view
 					debugBuffer = new BufferEditor();
+					debugBuffer.getBuffer().setNewFile(false);
 				}
 				debugBuffer.append(s);
 			}
@@ -165,21 +167,23 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	static public void sendBufferToPolyML(Buffer b, EditPane e) {
 		//errorSource.clear();
-		if(jEdit.getActiveView().getBuffer() != b) {
-			System.err.print("Action Script oddity! buffer is not the active buffer! Will use the active buffer instead.");
-			b = jEdit.getActiveView().getBuffer();
-		}
-		
-		errorSource.removeFileErrors(b.getPath());
-		errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
-				ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
-		
-		if(polyMLProcess != null || restartPolyML()) {
-			polyMLProcess.sendCompileBuffer(b, e);
-		} else {
-			JOptionPane.showMessageDialog(null, "Failed to (re)start PolyML from command: " 
-					+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND) + "\nChange the command in the Plugin Options menu", 
-					"PolyML not running", JOptionPane.WARNING_MESSAGE);
+		synchronized(jEditGUILock){
+			if(jEdit.getActiveView().getBuffer() != b) {
+				System.err.print("Action Script oddity! buffer is not the active buffer! Will use the active buffer instead.");
+				b = jEdit.getActiveView().getBuffer();
+			}
+
+			errorSource.removeFileErrors(b.getPath());
+			errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
+					ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
+
+			if(polyMLProcess != null || restartPolyML()) {
+				polyMLProcess.sendCompileBuffer(b, e);
+			} else {
+				JOptionPane.showMessageDialog(null, "Failed to (re)start PolyML from command: " 
+						+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND) + "\nChange the command in the Plugin Options menu", 
+						"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			}
 		}
 	}
 
@@ -248,14 +252,19 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @return
 	 */
 	static public BufferEditor newDebugShellBuffer() {
-		debugBuffer = new BufferEditor();
+		synchronized(jEditGUILock){
+			debugBuffer = new BufferEditor();
+		}
 		return debugBuffer;
 	}
 
 	static public ShellBuffer newShellBuffer() {
 		synchronized(jEditGUILock){
-			Buffer b = jEdit.newFile(null, jEdit.getActiveView().getBuffer()
-					.getDirectory());
+			View v = jEdit.getActiveView();
+			//TextArea a = v.getTextArea();
+			// start off not showing the new buffer
+			Buffer b = jEdit.newFile(null, v.getBuffer().getDirectory());
+			b.setNewFile(false);
 			// System.err.println("newShellBuffer");
 
 			ShellBuffer s;
@@ -264,9 +273,8 @@ public class PolyMLPlugin extends EBPlugin {
 				shells.put(b, s);
 				// show buffer after adding to shell list so that buffer
 				// changed events trigger use of text area extensions.
-				View v = jEdit.getActiveView();
 				v.showBuffer(b);
-				s.showInTextArea(v.getTextArea());
+				// s.showInTextArea(a); // done event in showBuffer
 				return s;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -291,6 +299,7 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
+	
 	/* start and restart are the same: they restart shell in the current buffer */
 	static public void startShellInBuffer(Buffer b) {
 		// System.err.println("startShellInBuffer");
@@ -355,11 +364,13 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @param editPane
 	 */
 	public void usingShellBufferTextArea(EditPane editPane) {
-		Buffer b = editPane.getBuffer();
-		ShellBuffer s = shellBufferOfBuffer(b);
-		//System.err.println("usingShellBufferTextArea");
-		if (s != null) {
-			s.showInTextArea(editPane.getTextArea());
+		synchronized(jEditGUILock){
+			Buffer b = editPane.getBuffer();
+			ShellBuffer s = shellBufferOfBuffer(b);
+			//System.err.println("usingShellBufferTextArea");
+			if (s != null) {
+				s.showInTextArea(editPane.getTextArea());
+			}
 		}
 	}
 
@@ -370,10 +381,12 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @param editPane
 	 */
 	public void unusingShellBufferTextArea(EditPane editPane) {
-		Buffer b = editPane.getBuffer();
-		ShellBuffer s = shellBufferOfBuffer(b);
-		if (s != null) {
-			s.unShowInTextArea(editPane.getTextArea());
+		synchronized(jEditGUILock){
+			Buffer b = editPane.getBuffer();
+			ShellBuffer s = shellBufferOfBuffer(b);
+			if (s != null) {
+				s.unShowInTextArea(editPane.getTextArea());
+			}
 		}
 	}
 
@@ -425,4 +438,16 @@ public class PolyMLPlugin extends EBPlugin {
 			}
 		}
 	}
+	
+	
+
+	/* start and restart are the same: they restart shell in the current buffer */
+	static public void test() {
+		synchronized(jEditGUILock){
+			Buffer b = jEdit.newFile(jEdit.getActiveView());
+			b.setDirty(false);
+			Buffer b2 = jEdit.newFile(jEdit.getActiveView());
+		}
+	}
+	
 }

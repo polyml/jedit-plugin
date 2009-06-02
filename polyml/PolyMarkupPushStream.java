@@ -179,6 +179,10 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 					errorSource.addError(new DefaultErrorSource.DefaultError(
 							errorSource, ErrorSource.WARNING, fileName, 0,
 							0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
+				} else {
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.WARNING, fileName, 0,
+							0, 0, "Compilation found errors of kind: " + r.status + " (parse id: " + r.parseID + ")"));
 				}
 				
 				// can still have errors even is success: e.g. warnings. 
@@ -211,9 +215,6 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 						ex.printStackTrace();
 					}
 				}
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.WARNING, fileName, 0,
-						0, 0, "Compilation had errors of kind: " + r.status + " (parse id: " + r.parseID + ")"));
 			}
 			
 		} else if(m.kind == PolyMarkup.KIND_PROPERTIES) {

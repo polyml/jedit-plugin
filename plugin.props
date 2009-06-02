@@ -65,8 +65,10 @@ plugin.polyml.PolyMLPlugin.menu=\
   polyml-menu.mitem-stop_all \
   polyml-menu.mitem-process_shellbuf_to_eof \
   polyml-menu.mitem-prev_command \
-  polyml-menu.mitem-next_command
-
+  polyml-menu.mitem-next_command \
+  - \
+  polyml-menu.mitem-test
+  
 #  - \
 #  polyml-menu.mitem-send_cur_buffer \
 #  polyml-menu.mitem-send_cur_command \
@@ -97,6 +99,8 @@ polyml-menu.mitem-restart.label=Restart ShellBuffer
 polyml-menu.mitem-process_shellbuf_to_eof.label=Send input from the current shellbuffer
 polyml-menu.mitem-prev_command.label=Previous ShellBuffer Command
 polyml-menu.mitem-next_command.label=Next ShellBuffer Command
+
+polyml-menu.mitem-test.label=test action
 
 #polyml-menu.mitem-send_cur_buffer.label=Send Buffer to ShellBuffer
 #polyml-menu.mitem-send_cur_command.label=Send Line/Command to ShellBuffer
