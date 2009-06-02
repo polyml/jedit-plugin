@@ -433,89 +433,24 @@ public class PolyMLProcess {
 	//	compile(srcFileName, srcFileName, src);
 	//}
 
-	public class PolyMLSaveDir implements FileFilter {
-		@Override
-		public boolean accept(File f) {
-			File savedir = new File(f.getParent() + File.separator
-					+ POLY_SAVE_DIR);
-			// System.err.println("PolyMLSaveDir: \n  " + f + "\n  " + savedir);
-			return (f.compareTo(savedir) == 0);
-		}
-	}
-
-	public File searchForProjectDir(Buffer b) {
-		File p = new File(b.getDirectory()).getAbsoluteFile();
-		File projectDir = null;
-
-		while (projectDir == null && p != null) {
-			// System.err.println("looking for .polysave in:  " + p);
-			File[] polysavedir = p.listFiles(new PolyMLSaveDir());
-			if (polysavedir.length != 0) {
-				// System.err.println("Found .polysave in:  " + p);
-				projectDir = new File(p.getAbsolutePath() + File.separator
-						+ POLY_SAVE_DIR);
-				// System.err.println("Looking for:  " + heapFile);
-				if (!projectDir.exists()) {
-					projectDir = null;
-				}
-			}
-			p = p.getParentFile();
-		}
-
-		return projectDir;
-	}
-
-	public String searchForBufferHeapFile(Buffer b) {
-		String s = b.getPath();
-		File p = new File(b.getDirectory()).getAbsoluteFile();
-		String heap = null;
-		boolean noProject = true;
-
-		while (noProject && p != null) {
-			// System.err.println("looking for .polysave in:  " + p);
-			File[] polysavedir = p.listFiles(new PolyMLSaveDir());
-			if (polysavedir.length != 0) {
-				// System.err.println("Found .polysave in:  " + p);
-				File heapFile = new File(p.getAbsolutePath() + File.separator
-						+ POLY_SAVE_DIR + File.separator
-						+ s.substring(p.getPath().length()) + ".save");
-				// System.err.println("Looking for:  " + heapFile);
-				if (heapFile.exists()) {
-					heap = heapFile.getAbsolutePath();
-					noProject = false;
-				}
-			}
-			p = p.getParentFile();
-		}
-
-		return heap;
-	}
-
 	/**
 	 * compile a buffer
 	 * 
 	 * @param b
 	 */
 	public void sendCompileBuffer(Buffer b, EditPane e) {
-		String projectPath;
 		String src = b.getText(0, b.getLength());
 		
 		// change directory to project directory, if there is a project
 		// directory.
 		String preSetupString = new String();
-		File projectDir = searchForProjectDir(b);
-		if (projectDir != null) {
-			projectPath = projectDir.getParent();
-		} else {
-			File bFile = new File(b.getPath());
-			projectPath = bFile.getParent();
-		}
-
+		String projectPath = ProjectTools.searchForProjectDir(b);
+	
 		// load heap if there is one to be loaded
-		String heap = searchForBufferHeapFile(b);
+		String heap = ProjectTools.searchForBufferHeapFile(b);
 		boolean haveIDEHeap = checkAndCreatePolyIDE();
-		// FIXME: tell user when there heap is older than the IDE heap 
-		// - they may have the wrong use function.
+		// FIXME: tell user when the heap is older than the IDE heap 
+		// - they may have the wrong use function
 		if (heap != null) {
 			preSetupString += "let val p = ! PolyML.IDEInterface.parseTree in \n" +
 					"(PolyML.SaveState.loadState \"" + heap + "\"; \n" +

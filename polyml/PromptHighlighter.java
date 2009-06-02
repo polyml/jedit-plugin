@@ -23,7 +23,7 @@ public class PromptHighlighter extends TextAreaExtension {
 		super();
 		textArea = t;
 		pos = p;
-		System.err.println("PromptHighlighter created");
+		//System.err.println("PromptHighlighter created");
 	}
 	public void paintValidLine(Graphics2D gfx, int screenLine,
 			int physicalLine, int start, int end, int y) {

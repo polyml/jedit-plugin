@@ -84,14 +84,16 @@ public final class ShellBuffer extends Object {
 		mShellWriter = null;
 		mOutputBuffer = b;
 		
-		// b.getBuffer()
+		// THINK: do we want to do this if we fail to start shell? 
 		mPos = new BufferProcOutputPos(this);
-
 		mHistory = new History(jEdit.getIntegerProperty(PolyMLPlugin.PROPS_SHELL_MAX_HISTORY, 50));
-		
-		restartProcess();
-		String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
-		mOutputBuffer.appendPrompt(mPos, prompt);
+
+		if(restartProcess()) { // if restart was successful
+			// b.getBuffer()
+			String prompt = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT);
+			mOutputBuffer.appendPrompt(mPos, prompt);
+		}
+		// FIXME: give an error dialogue?? 
 		
 		//try {		
 		//} catch(IOException e) {
@@ -120,7 +122,7 @@ public final class ShellBuffer extends Object {
 	}
 	
 	/** When we throw IOException everything is correctly closed/null. */
-	void restartProcess() throws IOException {
+	boolean restartProcess() {
 		//dbgMsg("startProcess:Starting new process");
 		stopProcess();
 		String cmd = jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND);
@@ -145,8 +147,10 @@ public final class ShellBuffer extends Object {
 			System.err.println("ShellBuffer:" + "Failed to start process: " + cmd);
 			//dbgMsg("**** Failed to start process!!! ***");
 			mShellProcess = null;
-			throw e;
+			return false;
+			//throw e;
 		}
+		return true;
 		//mShellWriter = new OutputStreamWriter(mShellProcess.getOutputStream());
 		//dbgMsg("startProcess:started.");
 	}

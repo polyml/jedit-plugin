@@ -5,6 +5,7 @@
 package polyml;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,7 +32,6 @@ import org.gjt.sp.jedit.msg.PluginUpdate;
 import org.gjt.sp.jedit.msg.ViewUpdate;
 import org.gjt.sp.jedit.textarea.TextArea;
 
-import polyml.PolyMLProcess.PolyMLSaveDir;
 import pushstream.PushStream;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
@@ -65,6 +65,9 @@ public class PolyMLPlugin extends EBPlugin {
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
 	static PolyMLPlugin jEditGUILock;
+	static Integer shellBufferNameCount;
+	static Integer debugBufferNameCount;
+
 
 	public PolyMLPlugin() {
 		super();
@@ -73,6 +76,8 @@ public class PolyMLPlugin extends EBPlugin {
 		polyMLProcess = null;
 		debugBuffer = null;
 		jEditGUILock = this;
+		shellBufferNameCount = 0;
+		debugBufferNameCount = 0;
 		System.err.println("PolyMLPlugin: started!");
 	}
 
@@ -103,8 +108,8 @@ public class PolyMLPlugin extends EBPlugin {
 					.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
 				if (debugBuffer == null) {
 					// creates a new buffer in the view
-					debugBuffer = new BufferEditor();
-					debugBuffer.getBuffer().setNewFile(false);
+					debugBuffer = new BufferEditor(newDebugBufferFile(null,null));
+					//debugBuffer.getBuffer().setNewFile(false);
 				}
 				debugBuffer.append(s);
 			}
@@ -253,27 +258,36 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	static public BufferEditor newDebugShellBuffer() {
 		synchronized(jEditGUILock){
-			debugBuffer = new BufferEditor();
+			debugBuffer = new BufferEditor(newDebugBufferFile(null,null));
 		}
 		return debugBuffer;
 	}
-
+	
 	static public ShellBuffer newShellBuffer() {
 		synchronized(jEditGUILock){
 			View v = jEdit.getActiveView();
 			//TextArea a = v.getTextArea();
 			// start off not showing the new buffer
-			Buffer b = jEdit.newFile(null, v.getBuffer().getDirectory());
-			b.setNewFile(false);
+			Buffer fromBuffer = v.getBuffer();
+			Buffer b = 
+				newShellBufferFile(null,fromBuffer.getDirectory());
+			//b.setNewFile(false);
 			// System.err.println("newShellBuffer");
-
+			
 			ShellBuffer s;
 			try {
-				s = new ShellBuffer(new BufferEditor(b));
+				BufferEditor be = new BufferEditor(b);
+				s = new ShellBuffer(be);
 				shells.put(b, s);
 				// show buffer after adding to shell list so that buffer
 				// changed events trigger use of text area extensions.
 				v.showBuffer(b);
+				
+				String heap = ProjectTools.searchForBufferHeapFile(fromBuffer);
+				if(heap != null) {
+					be.append(ProjectTools.MLStringForLoadHeap(heap));
+				}
+				
 				// s.showInTextArea(a); // done event in showBuffer
 				return s;
 			} catch (IOException e) {
@@ -324,12 +338,7 @@ public class PolyMLPlugin extends EBPlugin {
 		// System.err.println("restartShellInBuffer");
 		ShellBuffer sb = shellBufferOfBuffer(b);
 		if (sb != null) {
-			try {
-				sb.restartProcess();
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.err.println(e.toString());
-			}
+			sb.restartProcess();
 		} else {
 			try {
 				ShellBuffer s = new ShellBuffer(new BufferEditor(b));
@@ -439,14 +448,24 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 	
+
+	static Buffer newMLTxtBufferFile(View view, String dir, String name, Integer count) {
+		count ++;
+		return jEdit.openFile(view, dir, name + "-"+ count + ".ml.txt",true,null);
+	}
 	
+	static Buffer newShellBufferFile(View view, String dir) {
+		return newMLTxtBufferFile(view, dir,"ShellBuffer", shellBufferNameCount);
+	}
+	
+	static Buffer newDebugBufferFile(View view, String dir) {
+		return newMLTxtBufferFile(view, dir,"DebugBuffer", debugBufferNameCount);
+	}
 
 	/* start and restart are the same: they restart shell in the current buffer */
 	static public void test() {
 		synchronized(jEditGUILock){
 			Buffer b = jEdit.newFile(jEdit.getActiveView());
-			b.setDirty(false);
-			Buffer b2 = jEdit.newFile(jEdit.getActiveView());
 		}
 	}
 	

@@ -1,6 +1,7 @@
 package polyml;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
@@ -30,11 +31,6 @@ public class BufferEditor {
 	
 	public BufferEditor(Buffer buf) {
 		mBuffer = buf;
-	}
-	
-	public BufferEditor() {
-		//this(jEdit.newFile(jEdit.getFirstView()));
-		this(jEdit.newFile(null));
 	}
 	
 	public Buffer getBuffer() {
