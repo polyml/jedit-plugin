@@ -37,6 +37,7 @@ public class InputStreamThread extends Thread implements Runnable {
 				// if not end of stream, add char to string
 				int i = reader.readByte();
 				if(i != -1) { 
+					//System.err.println("InputSTreamThread: " + (char)i);
 					pushStream.add((char)i, reader.available() > 0); 
 				} else { 
 					mRunningQ = false; 

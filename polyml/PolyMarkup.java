@@ -37,6 +37,7 @@ public class PolyMarkup implements PushStream<Character> {
 	public final static char KIND_LOC = 'I';
 	
 	public final static char KIND_MOVE = 'M';
+	public static final char KIND_HELLO = 'H';
 	
 	
 	// status of lazy markup
@@ -171,6 +172,8 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	// add a character to the markup seen so far
 	public void add(Character c) {
+		//System.err.println("PolyMarkup.add: " + c);
+
 		if(status == STATUS_OUTSIDE_ESC) {
 			if(c >= 'A' && c <= 'Z') { // new tag, markup started!
 				parents = new LinkedList<PolyMarkup>();

@@ -15,10 +15,13 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 
 	CompileInfos compileInfos;
 	DefaultErrorSource errorSource;
-
-	public PolyMarkupPushStream(DefaultErrorSource e, CompileInfos p) {
-		errorSource = e;
-		compileInfos = p;
+	Object helloLock;
+	
+	public PolyMarkupPushStream(DefaultErrorSource errorSource, 
+			CompileInfos compileInfos, Object helloLock) {
+		this.errorSource = errorSource;
+		this.compileInfos = compileInfos;
+		this.helloLock = helloLock;
 	}
 	
 	/**
@@ -132,13 +135,18 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	}
 
 	public synchronized void add(PolyMarkup m) {
+		//System.err.println("PolyMarkupPushStream: " + m.toPrettyString());
 		
-		PolyMLPlugin.debugMessage("\n\n"); 
-		PolyMLPlugin.debugMessage(m.toPrettyString()); 
+		//PolyMLPlugin.debugMessage("\n\n"); 
+		//PolyMLPlugin.debugMessage(m.toPrettyString()); 
 		PolyMLPlugin.debugMessage("\n\n"); 
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
-		
-		if(m.kind == PolyMarkup.KIND_COMPILE) {
+		if(m.kind == PolyMarkup.KIND_HELLO) {
+			System.err.println("got hello!");
+			synchronized(helloLock) {
+				helloLock.notifyAll(); // any threads waiting on compile to be completed can wake up
+			}
+		} else if(m.kind == PolyMarkup.KIND_COMPILE) {
 			CompileResult r = new CompileResult(m);
 			
 			CompileRequest cr = compileInfos.compileCompleted(r);

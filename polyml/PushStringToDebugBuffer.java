@@ -13,7 +13,8 @@ public class PushStringToDebugBuffer implements PushStream<String> {
 	public PushStringToDebugBuffer() {
 	}
 
-	public synchronized void add(String s) {
+	public void add(String s) { 
+		//System.err.println("PushStringToDebugBuffer.add:" + s);
 		PolyMLPlugin.debugMessage(s);
 	}
 

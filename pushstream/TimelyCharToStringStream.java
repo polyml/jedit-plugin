@@ -31,19 +31,24 @@ public class TimelyCharToStringStream implements PushStream<Character>{
 	public void add(Character c, boolean isMore) {
 		// add character to string
 		pushString += c;
-
-		// if there was delay set before, make the new push time
-		if(pushTime == null) { resetPushTime(); }
+		//System.err.println("TimelyCharToStringStream.add: " + c);
 		
-		if(pushTime < (new Date()).getTime()) { // time limit hit; push string onwards
+		// if there was delay set before, make the new push time
+		if(! isMore) { // no more data waiting, push this string on. 
+			//System.err.println("no more: \'" + pushString + "\'");
+			stream.add(pushString);
+			pushString = new String();
+			pushTime = null;
+		} else if(pushTime == null) { // no time limit set, set new time limit, no push
+			//System.err.println("resetting push time... ");
+			resetPushTime(); 
+			//System.err.println("reset push time to: " + pushTime);
+		} else if(pushTime < (new Date()).getTime()) { // time limit hit; push string onwards
+			//System.err.println("Hit time limit: \'" + pushString + "\'");
 			stream.add(pushString);
 			pushString = new String();
 			if(isMore) { resetPushTime(); }
 			else { pushTime = null; }
-		} else if(! isMore) { // if no more data waiting, push this string on. 
-			stream.add(pushString);
-			pushString = new String();
-			pushTime = null;
 		}
 	}
 

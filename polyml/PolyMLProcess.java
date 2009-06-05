@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -214,20 +215,40 @@ public class PolyMLProcess {
 			reader = new DataInputStream(process.getInputStream());
 			writer = new DataOutputStream(process.getOutputStream());
 
-			errorPushStream = new PolyMarkupPushStream(errorSource, compileInfos);
+			Object helloLock = new Object();
+			errorPushStream = new PolyMarkupPushStream(errorSource, compileInfos, helloLock);
 
 			// setup and start listening thread.
 			polyListener = new InputStreamThread(reader,
 					new CopyPushStream<Character>(new TimelyCharToStringStream(
-							new PushStringToDebugBuffer(), 300),
+							new PushStringToDebugBuffer(), 100),
 							new PolyMarkup(errorPushStream)));
 			
 			//polyListener = new InputStreamThread(reader, new PolyMarkup(errorPushStream));
 			
 			polyListener.start();
 			
-			// get poly to start in IDE protocol mode
-			sendToPoly("PolyML.IDEInterface.runIDEProtocol();");
+			synchronized(helloLock) {
+				// get poly to start in IDE protocol mode
+				sendToPoly("val _ = (print \"Starting IDE protocol...\"; PolyML.IDEInterface.runIDEProtocol());");
+				try {
+					long delay = 5000;
+					long t = (new Date()).getTime() + delay;
+					System.err.println("restartProcess: wiating for hello...");
+					helloLock.wait(5000);
+					mRunningQ = true; // got hello back, so we are running
+					if(t <= (new Date()).getTime()) {
+						System.err.println("restartProcess: ran out of time waiting for ML to start, pretending it worked...");
+					} else {
+						System.err.println("restartProcess: got hello!");			
+					}
+				} catch (InterruptedException e) {
+					System.err.println("restartProcess: got interupted when waiting hello response.");
+					e.printStackTrace();
+				}
+			}
+			
+		
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
 					+ polyProcessCmd);
@@ -242,7 +263,7 @@ public class PolyMLProcess {
 	public synchronized void closeProcess() {
 		if(mRunningQ) {
 			mRunningQ = false;
-			notify();
+			notify(); // FIXME: why this is here? 
 		}
 		if (process != null) {
 			try {
@@ -414,8 +435,8 @@ public class PolyMLProcess {
 		synchronized(compileRequest) {
 			sendCompileRequest(compileRequest);
 			try {
-				//compileRequest.wait();
-				compileRequest.wait(5000);
+				compileRequest.wait();
+				//compileRequest.wait(5000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
