@@ -78,7 +78,7 @@ public class PolyMLPlugin extends EBPlugin {
 		jEditGUILock = this;
 		shellBufferNameCount = 0;
 		debugBufferNameCount = 0;
-		System.err.println("PolyMLPlugin: started!");
+		//System.err.println("PolyMLPlugin: started!");
 	}
 
 	/**
@@ -133,7 +133,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	// called when plugin is loaded/added
 	public void start() {
-		System.err.println("PolyMLPlugin: start called.");
+		//System.err.println("PolyMLPlugin: start called.");
 		errorSource = new DefaultErrorSource(NAME);
 		DefaultErrorSource.registerErrorSource(errorSource);
 	}
@@ -164,7 +164,7 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 	
 	static public boolean restartPolyML() {
-		System.err.println("restarting polyml...");
+		//System.err.println("restarting polyml...");
 		try {
 			if (polyMLProcess == null) {
 				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
@@ -174,7 +174,7 @@ public class PolyMLPlugin extends EBPlugin {
 			polyMLProcess.restartProcess();
 			return true;
 		} catch (IOException e) {
-			// System.err.println("PolyMLPlugin: Failed to restart PolyML!");
+			//System.err.println("PolyMLPlugin: Failed to restart PolyML!");
 			// e.printStackTrace();
 			polyMLProcess = null;
 			return false;
@@ -348,7 +348,7 @@ public class PolyMLPlugin extends EBPlugin {
 			Buffer b = 
 				newShellBufferFile(null,fromBuffer.getDirectory());
 			//b.setNewFile(false);
-			// System.err.println("newShellBuffer");
+			//System.err.println("newShellBuffer");
 			
 			ShellBuffer s;
 			try {
@@ -367,7 +367,7 @@ public class PolyMLPlugin extends EBPlugin {
 				// s.showInTextArea(a); // done event in showBuffer
 				return s;
 			} catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				System.err.println(e.toString());
 				return null;
 			}
@@ -376,7 +376,7 @@ public class PolyMLPlugin extends EBPlugin {
 
 	static public void processShellBufferToEOF(Buffer b) {
 		try {
-			// System.err.println("called processShellBufferToEOF");
+			//System.err.println("called processShellBufferToEOF");
 			ShellBuffer s = shellBufferOfBuffer(b);
 			if (s == null) {
 				System.err.println("Not a ShellBuffer!");
@@ -384,7 +384,7 @@ public class PolyMLPlugin extends EBPlugin {
 				s.sendBufferTextToEOF();
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			System.err.println(e.toString());
 		}
 	}
@@ -392,7 +392,7 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	/* start and restart are the same: they restart shell in the current buffer */
 	static public void startShellInBuffer(Buffer b) {
-		// System.err.println("startShellInBuffer");
+		//System.err.println("startShellInBuffer");
 		restartShellInBuffer(b);
 	}
 
@@ -411,7 +411,7 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 
 	static public void restartShellInBuffer(Buffer b) {
-		// System.err.println("restartShellInBuffer");
+		//System.err.println("restartShellInBuffer");
 		ShellBuffer sb = shellBufferOfBuffer(b);
 		if (sb != null) {
 			sb.restartProcess();
@@ -505,7 +505,7 @@ public class PolyMLPlugin extends EBPlugin {
 			// Mode m = b.getMode();
 			// if(m.getName() == "PolyML Mode") { // Hacky: better way to check
 			// mode?
-			// System.err.println("PolyML Mode Buffer Saved! do something? ");
+			//System.err.println("PolyML Mode Buffer Saved! do something? ");
 			// }
 			// }
 		} else if (msg instanceof EditPaneUpdate) {

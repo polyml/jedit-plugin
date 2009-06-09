@@ -113,7 +113,7 @@ public class CompileResult {
 				
 			} catch (MarkupException e) {
 				e.printMarkupException();
-				// System.err.println(e.toString());
+				//System.err.println(e.toString());
 				status = STATUS_BUG;
 				finalOffset = 0;
 			}

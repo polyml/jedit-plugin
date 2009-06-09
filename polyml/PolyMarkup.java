@@ -345,14 +345,14 @@ public class PolyMarkup implements PushStream<Character> {
 
 // now read in to see what kind of special char it is
 c = (char) r.read();
-// System.err.println("ESC: " + c);
+//System.err.println("ESC: " + c);
 if (c == 'D') {
 	if (content == null) { content = new String(); }
 	content += readDescriptionMessageMarkup(r);
 } else if (c == ',') { // if field break
 	if (content == null) { content = new String(); }
 	fields.add(new PolyMarkup(null, content));
-	// System.err.println("content in field of '" + k + "' = '" + content + "'");
+	//System.err.println("content in field of '" + k + "' = '" + content + "'");
 	content = new String();
 } else if (c >= 'A' && c <= 'Z') {
 	// if capital char, note new previous field if not empty, then
@@ -360,7 +360,7 @@ if (c == 'D') {
 	// stuff as separate field.
 	if (content != null && !content.isEmpty()) {
 		fields.add(new PolyMarkup(null, content));
-		// System.err.println("content in field of '" + k + "' = '" + content + "'");
+		//System.err.println("content in field of '" + k + "' = '" + content + "'");
 	}
 
 	// read subfield
@@ -377,10 +377,10 @@ if (c == 'D') {
 } else if (k.charValue() == c) { // k char indicates end of this block
 	if (content != null) { // avoid empty end of field fields.
 		fields.add(new PolyMarkup(null, content));
-		// System.err.println("content in '" + k + "' = '" + content + "'");
+		//System.err.println("content in '" + k + "' = '" + content + "'");
 	}
 	inBlock = false;
-	// System.err.println("end tag: " + c + "");
+	//System.err.println("end tag: " + c + "");
 } else { // includes bad EOT characters
 	// badly formed, add content so far to error
 	if (content != null) {

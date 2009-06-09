@@ -30,7 +30,7 @@ public class PromptHighlighter extends TextAreaExtension {
 		int p = pos.getPrePromptPos();
 		int p2 = pos.getPostPromptPos();
 		
-		// System.err.println("p:" + p + "; p2: " + p2);
+		//System.err.println("p:" + p + "; p2: " + p2);
 		
 		int line = textArea.getScreenLineOfOffset(p);
 		

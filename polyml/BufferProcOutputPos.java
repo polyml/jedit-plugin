@@ -165,7 +165,7 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	//}
 	
 	//void dbgMsg(String s) { 
-	//	System.err.println("BufferEditor:" + s);
+	//System.err.println("BufferEditor:" + s);
 	//}
 	
 	public synchronized void bufferLoaded(JEditBuffer buffer) {

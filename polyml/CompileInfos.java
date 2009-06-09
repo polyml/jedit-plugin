@@ -66,16 +66,16 @@ public class CompileInfos {
 			// update table from parse ID's to parse result, if we successfully parsed file.
 			// any new messages will have the new parse current ID, 
 			// which is already in the parse ID table
-			System.err.println("cr.filename: " + cr.fileName);
-			System.err.println("cr.sentParseID: " + cr.sentParseID + "; r.parseID: " + r.parseID);
-			System.err.println("cr.lastParseID: " + cr.lastParseID + "; cr.prevParseID: " + cr.prevParseID);
+			//System.err.println("cr.filename: " + cr.fileName);
+			//System.err.println("cr.sentParseID: " + cr.sentParseID + "; r.parseID: " + r.parseID);
+			//System.err.println("cr.lastParseID: " + cr.lastParseID + "; cr.prevParseID: " + cr.prevParseID);
 			if(cr.sentParseID.equals(r.parseID)) {
 				if(cr.prevParseID != null) {
 					parseMap.remove(cr.prevParseID);
 				}
 				cr.prevParseID = cr.lastParseID;
 				cr.lastParseID = r.parseID;
-				System.err.println("cr.lastParseID2: " + cr.lastParseID + "; cr.prevParseID2: " + cr.prevParseID);
+				//System.err.println("cr.lastParseID2: " + cr.lastParseID + "; cr.prevParseID2: " + cr.prevParseID);
 				
 			} else { // parse failed; so no other message will refer to requestID... fixme: resent request???
 				parseMap.remove(cr.sentParseID);

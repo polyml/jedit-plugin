@@ -37,7 +37,6 @@ public class PolyMLProcess {
 	static final String ESC_END = ESC + "r";
 	static final String POLY_SAVE_DIR = ".polysave";
 
-
 	List<String> polyProcessCmd; // polyML command
 	Process process; // the polyML Process
 	DataOutputStream writer; // basic writing to polyML
@@ -108,7 +107,7 @@ public class PolyMLProcess {
 			long zipTime = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getFile().lastModified();
 
 			if ((! ideHeapFile.exists()) || (ideHeapFile.lastModified() < zipTime)) {
-				System.err.println("compiling IDE ML Code. ");
+				//System.err.println("compiling IDE ML Code. ");
 				try {
 					File ideSrc = File.createTempFile("poly_ide", ".sml");
 					ZipFile zip = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getZipFile();
@@ -132,7 +131,7 @@ public class PolyMLProcess {
 					// IMPROVE: deal with compile result? 
 					if(! ideHeapFile.exists()){ 
 						// r.requestID.equals(PolyMLPlugin.IDEPolyHeapFile) && r.isSuccess())
-						System.err.println("Failed to make IDE heap");
+						System.err.println("Failed to make IDE heap.");
 						ideHeapFile = null;
 						return false;
 					}
@@ -199,7 +198,7 @@ public class PolyMLProcess {
 			throws IOException {
 		closeProcess();
 
-		System.err.println("restartProcessFromCmd:" + polyProcessCmd);
+		//System.err.println("restartProcessFromCmd:" + polyProcessCmd);
 
 		ProcessBuilder pb = new ProcessBuilder(polyProcessCmd);
 		if(pb == null) {
@@ -209,7 +208,7 @@ public class PolyMLProcess {
 		}
 		pb.redirectErrorStream(true);
 		try {
-			System.err.println("PolyMLProcess:" + "start called: " + polyProcessCmd);
+			//System.err.println("PolyMLProcess:" + "start called: " + polyProcessCmd);
 			process = pb.start();
 			
 			reader = new DataInputStream(process.getInputStream());
@@ -234,13 +233,13 @@ public class PolyMLProcess {
 				try {
 					long delay = 5000;
 					long t = (new Date()).getTime() + delay;
-					System.err.println("restartProcess: wiating for hello...");
+					//System.err.println("restartProcess: wiating for hello...");
 					helloLock.wait(5000);
 					mRunningQ = true; // got hello back, so we are running
 					if(t <= (new Date()).getTime()) {
 						System.err.println("restartProcess: ran out of time waiting for ML to start, pretending it worked...");
 					} else {
-						System.err.println("restartProcess: got hello!");			
+						//System.err.println("restartProcess: got hello!");			
 					}
 				} catch (InterruptedException e) {
 					System.err.println("restartProcess: got interupted when waiting hello response.");
@@ -331,7 +330,7 @@ public class PolyMLProcess {
 		
 		cmd += ESC + Character.toString(Character.toLowerCase(c));
 		
-		System.err.println("sendPolyQuery: " + PolyMarkup.explicitEscapes(cmd));
+		//System.err.println("sendPolyQuery: " + PolyMarkup.explicitEscapes(cmd));
 		sendToPoly(cmd);
 	}
 	
@@ -402,7 +401,7 @@ public class PolyMLProcess {
 		
 		String lastRequestID = compileInfos.getLastCompileRequestID();
 		if(lastRequestID != null) {
-			System.err.println("sending cancel compile.");
+			//System.err.println("sending cancel compile.");
 			sendCancelCompile(lastRequestID);
 		}
 		
@@ -471,7 +470,7 @@ public class PolyMLProcess {
 		String heap = ProjectTools.searchForBufferHeapFile(b);
 		boolean haveIDEHeap = checkAndCreatePolyIDE();
 		// FIXME: tell user when the heap is older than the IDE heap 
-		// - they may have the wrong use function
+		// - they may have the wrong use function		
 		if (heap != null) {
 			preSetupString += "let val p = ! PolyML.IDEInterface.parseTree in \n" +
 					"(PolyML.SaveState.loadState \"" + heap + "\"; \n" +
@@ -493,7 +492,7 @@ public class PolyMLProcess {
 			preSetupString += "OS.FileSys.chDir \"" + b.getDirectory() + "\";\n";
 		}
 		
-		System.err.println("\nML Prelude: \n " + preSetupString + "\n;\n");
+		//System.err.println("\nML Prelude: \n " + preSetupString + "\n;\n");
 		
 		sendCompileRequest(new CompileRequest(preSetupString, b.getPath(), src));
 	}
@@ -506,6 +505,7 @@ public class PolyMLProcess {
 	public synchronized void sendToPoly(String command) {
 		
 		//System.err.println("makePolyQuery: " + PolyMarkup.explicitEscapes(command));
+		PolyMLPlugin.debugMessage("\n--- START OF SENT ---\n" + command + "\n--- END OF SENT ---\n");
 		
 		// if process variable is not null, we should be running, check this
 		if (process != null) {

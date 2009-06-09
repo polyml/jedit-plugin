@@ -142,7 +142,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		PolyMLPlugin.debugMessage("\n\n"); 
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
 		if(m.kind == PolyMarkup.KIND_HELLO) {
-			System.err.println("got hello!");
+			//System.err.println("got hello!");
 			synchronized(helloLock) {
 				helloLock.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
@@ -162,7 +162,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			
 			//String fileName = i.buffer.getPath();
 			//Buffer buffer = i.buffer;
-			System.err.println("Completed compile for file: " + cr.fileName);
+			//System.err.println("Completed compile for file: " + cr.fileName);
 			if(buffer == null) {
 				//System.err.println("buffer for: " + cr.fileName + " is null! opening it ");
 				buffer = jEdit.openFile(null, cr.fileName);
@@ -197,7 +197,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				for (PolyMLError e : r.errors) {
 					
 					//System.err.println("PolyMarkupPushStream: error at: " + e.startPos + ":" + e.endPos);
-					System.err.println("going thruogh the error list...");
+					//System.err.println("going thruogh the error list...");
 					
 					try {
 						int line = buffer.getLineOfOffset(e.startPos);

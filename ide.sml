@@ -109,15 +109,15 @@ structure IDE
                in the saved state.  That means that "use" won't save the state
                unless it's explicitly asked to. *)
            in
-         
             (* Create any containing directories. *)
+            print ("projectUse8.1: dreating directories...\n");
             createDirs(OS.Path.dir saveFile);
-      
+            print ("projectUse8.2: saving state... \n");
             (* Save the state. *)
             PolyML.SaveState.saveChild (saveFile,
-              List.length(PolyML.SaveState.showHierarchy()))
+              List.length(PolyML.SaveState.showHierarchy()));
             (* Restore the ref. *)
-
+            print ("projectUse8.3: state saved! \n")
           end handle (ex as OS.SysErr args) =>
             (print (String.concat["Exception SysErr(", 
              PolyML.makestring args, ") raised for ", fileName, "\n"]); 

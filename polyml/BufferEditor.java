@@ -26,7 +26,7 @@ public class BufferEditor {
 	Buffer mBuffer;
 
 	//void dbgMsg(String s) { 
-	//	System.err.println("BufferEditor:" + s);
+	//System.err.println("BufferEditor:" + s);
 	//}
 	
 	public BufferEditor(Buffer buf) {

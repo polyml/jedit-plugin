@@ -12,7 +12,7 @@ public class ProjectTools {
 		public boolean accept(File f) {
 			File savedir = new File(f.getParent() + File.separator
 					+ PolyMLProcess.POLY_SAVE_DIR);
-			// System.err.println("PolyMLSaveDir: \n  " + f + "\n  " + savedir);
+			//System.err.println("PolyMLSaveDir: \n  " + f + "\n  " + savedir);
 			return (f.compareTo(savedir) == 0);
 		}
 	}
@@ -22,13 +22,13 @@ public class ProjectTools {
 		File projectDir = null;
 
 		while (projectDir == null && p != null) {
-			// System.err.println("looking for .polysave in:  " + p);
+			//System.err.println("looking for .polysave in:  " + p);
 			File[] polysavedir = p.listFiles(new PolyMLSaveDir());
 			if (polysavedir.length != 0) {
-				// System.err.println("Found .polysave in:  " + p);
+				//System.err.println("Found .polysave in:  " + p);
 				projectDir = new File(p.getAbsolutePath() + File.separator
 						+ PolyMLProcess.POLY_SAVE_DIR);
-				// System.err.println("Looking for:  " + heapFile);
+				//System.err.println("Looking for:  " + heapFile);
 				if (!projectDir.exists()) {
 					projectDir = null;
 				}
@@ -57,14 +57,14 @@ public class ProjectTools {
 		boolean noProject = true;
 
 		while (noProject && p != null) {
-			// System.err.println("looking for .polysave in:  " + p);
+			//System.err.println("looking for .polysave in:  " + p);
 			File[] polysavedir = p.listFiles(new PolyMLSaveDir());
 			if (polysavedir.length != 0) {
-				// System.err.println("Found .polysave in:  " + p);
+				//System.err.println("Found .polysave in:  " + p);
 				File heapFile = new File(p.getAbsolutePath() + File.separator
 						+ PolyMLProcess.POLY_SAVE_DIR + File.separator
 						+ s.substring(p.getPath().length()) + ".save");
-				// System.err.println("Looking for:  " + heapFile);
+				//System.err.println("Looking for:  " + heapFile);
 				if (heapFile.exists()) {
 					heap = heapFile.getAbsolutePath();
 					noProject = false;
