@@ -7,9 +7,11 @@
 
 <project name="PolyML" default="dist" basedir=".">
 
-  <!-- MODIFY THIS TO WORK WITH YOUR JEDIT LOCATION -->
+  <!-- MODIFY THIS TO WORK WITH YOUR JEDIT LOCATION 
 	<property name="jedit.install.dir" 
-  value="/home/ldixon/local/jedit/jedit4.3pre16"/>
+  value="/home/ldixon/local/jedit/jedit4.3pre16"/> -->
+	<property name="jedit.install.dir" 
+  value="/home/ldixon/local/jedit-svn/jEdit/build"/>
 
   <!-- Maybe set this to your build porperties dir -->
 	<!-- <property file="build.properties"/> -->

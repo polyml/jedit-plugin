@@ -3,6 +3,7 @@ package polyml;
 import java.util.Iterator;
 
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.TextArea;
@@ -165,7 +166,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			//System.err.println("Completed compile for file: " + cr.fileName);
 			if(buffer == null) {
 				//System.err.println("buffer for: " + cr.fileName + " is null! opening it ");
-				buffer = jEdit.openFile(null, cr.fileName);
+				buffer = jEdit.openFile((View) null, cr.fileName);
 				if(buffer == null) {
 					System.err.println("cannot open: " +  cr.fileName);
 					fileName = cr.fileName;
