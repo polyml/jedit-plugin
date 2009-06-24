@@ -200,7 +200,7 @@ public class PolyMLPlugin extends EBPlugin {
 						ErrorSource.WARNING, b.getPath(), 0, 0, 0, "Compiling ML ... "));
 	
 				polyMLProcess.sendCompileBuffer(b, e);
-			}	
+			}
 		} else {
 			JOptionPane.showMessageDialog(null, "Failed to (re)start PolyML from command: " 
 					+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND) + "\nChange the command in the Plugin Options menu", 

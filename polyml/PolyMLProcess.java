@@ -208,7 +208,7 @@ public class PolyMLProcess {
 		}
 		pb.redirectErrorStream(true);
 		try {
-			//System.err.println("PolyMLProcess:" + "start called: " + polyProcessCmd);
+			System.err.println("PolyMLProcess:" + "start called: " + polyProcessCmd);
 			process = pb.start();
 			
 			reader = new DataInputStream(process.getInputStream());
@@ -233,13 +233,13 @@ public class PolyMLProcess {
 				try {
 					long delay = 5000;
 					long t = (new Date()).getTime() + delay;
-					//System.err.println("restartProcess: wiating for hello...");
+					System.err.println("restartProcess: wiating for hello...");
 					helloLock.wait(5000);
 					mRunningQ = true; // got hello back, so we are running
 					if(t <= (new Date()).getTime()) {
 						System.err.println("restartProcess: ran out of time waiting for ML to start, pretending it worked...");
 					} else {
-						//System.err.println("restartProcess: got hello!");			
+						System.err.println("restartProcess: got hello!");			
 					}
 				} catch (InterruptedException e) {
 					System.err.println("restartProcess: got interupted when waiting hello response.");
