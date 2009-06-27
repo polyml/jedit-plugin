@@ -9,9 +9,14 @@
 
   <!-- MODIFY THIS TO WORK WITH YOUR JEDIT LOCATION 
 	<property name="jedit.install.dir" 
-  value="/home/ldixon/local/jedit/jedit4.3pre16"/> -->
+  value="/home/ldixon/local/jedit/jedit4.3pre16"/> 
 	<property name="jedit.install.dir" 
-  value="/home/ldixon/local/jedit-svn/jEdit/build"/>
+  value="/home/ldixon/local/jedit-svn/jEdit/build"/> -->
+
+
+	<property name="jedit.user.home" value="=${user.home}/.jedit"/>
+
+	<property file="build.properties"/>
 
   <!-- Maybe set this to your build porperties dir -->
 	<!-- <property file="build.properties"/> -->
@@ -22,9 +27,10 @@
 	<property name="build.dir" value="bin"/>
 	<property name="install.dir"  value="."/>
 
-	<property name="jedit.plugins.dir"  value="${jedit.install.dir}/jars"/>
+	<property name="jedit.plugins.dir" value="${jedit.install.dir}/jars"/>
 
 	<path id="project.class.path">
+		<pathelement location="${jedit.user.home}/jars/ErrorList.jar"/>
 		<pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
 		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 	</path>

@@ -5,14 +5,25 @@
 This is a plugin for working with PolyML (http://www.polyml.org). It requires PolyML 5.3 or later. 
 The source code is under the GNU GPL license: http://www.gnu.org/copyleft/gpl.html
 
----------------------
- Build and Install
----------------------
-To build the plugin use ant from the PolyML Jedit Plugin directory: 
+---------
+ Install 
+---------
+
+The file "PolyML.jar" contains the compiled plugin, put this in the "jars" directory of jedit, or in your user plugins directory. On unix, the user jedit plugins directory is "$HOME/.jedit/jars/". Hint: making a symbolic link here will let you use "svn update" to update to the latest version of the plugin.  
+
+--------------
+ (re) Compile
+--------------
+
+You can re-compile the plugin using ant. This requires that you specify the location of your installed jEdit in a "build.properties" file. This is so that ant can find the jEdit.Jar file and the needed plugins. You can copy and edit the "build.properties.sample" file for this.
+
+Note that the PolyML plugin requires the ErrorList plugin to be installed. 
+
+Then you can (re)compile the PolyML jEdit Plugin with: 
 
   ant clean; ant
 
-This will create the file "PolyML.jar", which you can then place in the "jars" directory of jedit, or in your user plugins directory. On unix, the user jedit plugins directory is "$HOME/.jedit/jars/".
+Then follow the instructions above (Install from compiled jar) for installing the newly created "PolyML.jar" file.
 
 -------------------
  Details

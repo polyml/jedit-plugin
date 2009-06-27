@@ -1,0 +1,18 @@
+###
+### Build property file for PolyML jEdit Plugin
+###
+
+### jedit.install.dir
+# 
+# This is the directory where jEdit is installed, it
+# should contain the file "jEdit.jar" as well the subdirectory "jars"
+# which contains the needed plugins. For the PolyML Plugin, you need
+# to have ErrorList.jar.
+
+## Example of system-side installation
+# jedit.install.dir=/usr/local/jedit
+
+## Example values for svn version of jEdit built locally 
+# jedit.install.dir=/home/ldixon/local/jedit-svn/jEdit/build
+
+
