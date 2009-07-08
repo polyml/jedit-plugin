@@ -8,7 +8,6 @@ import org.gjt.sp.jedit.Buffer;
 public class ProjectTools {
 
 	static public class PolyMLSaveDir implements FileFilter {
-		@Override
 		public boolean accept(File f) {
 			File savedir = new File(f.getParent() + File.separator
 					+ PolyMLProcess.POLY_SAVE_DIR);
