@@ -3,7 +3,6 @@ package polyml;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,8 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.zip.ZipFile;
-
-import javax.swing.JOptionPane;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
@@ -235,19 +232,19 @@ public class PolyMLProcess {
 					long t = (new Date()).getTime() + delay;
 					System.err.println("restartProcess: wiating for hello...");
 					helloLock.wait(5000);
-					mRunningQ = true; // got hello back, so we are running
 					if(t <= (new Date()).getTime()) {
 						System.err.println("restartProcess: ran out of time waiting for ML to start, pretending it worked...");
+						closeProcess();
 					} else {
+						mRunningQ = true; // got hello back, so we are running
 						System.err.println("restartProcess: got hello!");			
 					}
 				} catch (InterruptedException e) {
+					closeProcess();
 					System.err.println("restartProcess: got interupted when waiting hello response.");
 					e.printStackTrace();
 				}
 			}
-			
-		
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
 					+ polyProcessCmd);
@@ -260,10 +257,7 @@ public class PolyMLProcess {
 	 * stop the ML process
 	 */
 	public synchronized void closeProcess() {
-		if(mRunningQ) {
-			mRunningQ = false;
-			notify(); // FIXME: why this is here? 
-		}
+		mRunningQ = false;
 		if (process != null) {
 			try {
 				writer.close();

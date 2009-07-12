@@ -19,11 +19,6 @@
 
 package polyml;
 
-import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.Composite;
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,17 +26,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.textarea.StructureMatcher;
 import org.gjt.sp.jedit.textarea.TextArea;
-import org.gjt.sp.jedit.textarea.TextAreaExtension;
-import org.gjt.sp.jedit.textarea.StructureMatcher.Match;
 
 import pushstream.PushStream;
 import pushstream.ReaderThread;

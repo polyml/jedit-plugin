@@ -63,6 +63,7 @@
 		polyml.PolyMLPlugin.sendBufferToPolyML(buffer, editPane);
 		</CODE>
 	</ACTION>
+	
 	<ACTION NAME="polyml-menu.mitem-cancel">
 		<CODE>
 		polyml.PolyMLPlugin.sendCancelToPolyML();
@@ -114,11 +115,6 @@
 		<CODE>
     polyml.PolyMLPlugin.stopAllShellBuffers();
 		</CODE>
-  </ACTION>
-  <ACTION NAME="polyml-menu.mitem-process_shellbuf_to_eof">
-		<CODE>
-    polyml.PolyMLPlugin.processShellBufferToEOF(buffer);
-    </CODE>
   </ACTION>
     <ACTION NAME="polyml-menu.mitem-prev_command">
 		<CODE>

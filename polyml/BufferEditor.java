@@ -1,19 +1,8 @@
 package polyml;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-
 import javax.swing.SwingUtilities;
 
 import org.gjt.sp.jedit.Buffer;
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.textarea.Selection;
-
-import javax.swing.text.StyledDocument;
-import javax.swing.text.StyleConstants;
-import javax.swing.JTextField;
 
 
 /** 

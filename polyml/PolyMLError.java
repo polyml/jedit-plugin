@@ -2,9 +2,6 @@ package polyml;
 
 import java.util.Iterator;
 
-import errorlist.DefaultErrorSource;
-import errorlist.ErrorSource;
-
 public class PolyMLError {
 	static char KIND_EXCEPTION = 'X';
 	static char KIND_PRELUDE_FAILURE = 'L';

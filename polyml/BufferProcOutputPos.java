@@ -1,6 +1,5 @@
 package polyml;
  
-import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.buffer.BufferChangeAdapter;
 import org.gjt.sp.jedit.buffer.BufferListener;

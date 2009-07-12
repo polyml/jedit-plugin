@@ -242,9 +242,12 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
 			
-			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
+			
+			
+			if(jEdit.getActiveView().getBuffer().getPath().equals(cr.fileName)) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
-				Buffer srcBuffer = jEdit.getActiveView().getBuffer();
+				Buffer srcBuffer = jEdit.getBuffer(cr.fileName); 
+				// jEdit.getActiveView().getBuffer();
 				int line = srcBuffer.getLineOfOffset(l.start);
 				int line_offset = l.start - srcBuffer.getLineStartOffset(line);
 				int end_line = srcBuffer.getLineOfOffset(l.end);
@@ -265,6 +268,8 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 							line_offset, end_offset, "Not a value, so no type: `" 
 							+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
 				}
+			} else {
+				System.err.println("different buffer shown than one which asked for type.");
 			}
 		} 
 		// Location responses
