@@ -17,7 +17,15 @@ public class ProjectTools {
 	}
 
 	static public File searchForProjectSaveDir(Buffer b) {
-		File p = new File(b.getDirectory()).getAbsoluteFile();
+		String dirString = b.getDirectory();
+		if(dirString == null) { return null; }
+		
+		File p = new File(dirString);
+		if(p == null) { return null; }
+		
+		p = p.getAbsoluteFile();
+		if(p == null) { return null; }
+		
 		File projectDir = null;
 
 		while (projectDir == null && p != null) {
