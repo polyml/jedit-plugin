@@ -3,6 +3,13 @@
 <!-- Actions in here corespond to the menu item names in the props file. -->
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
+
+	<ACTION NAME="polyml-menu.mitem-rebuild_ide_heap">
+		<CODE>
+		polyml.PolyMLPlugin.rebuildIDEHeap();
+		</CODE>
+	</ACTION>
+
 	<!-- *************************************************************** -->
 	
 	<ACTION NAME="polyml-menu.mitem-get_properties">

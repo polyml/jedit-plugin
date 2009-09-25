@@ -45,7 +45,7 @@ structure IDE
     function that saves the state and dependencies in ".save" and ".deps" files
     within that directory.
     
-    It is called by overiding use e.g.
+    It is called by over-riding use e.g.
       val use = IDE.projectUse ".polysave" "/home/ldixon/myproject"
     to define a version of "use" for the rest of the compilation.
   *)

@@ -165,6 +165,19 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 
 	/**
+	 * (re) create the IDE heap file for working with projects
+	 * @return true if managed to create the IDE heap
+	 */
+	static public boolean rebuildIDEHeap() {
+		if(restartPolyML()) {
+			return polyMLProcess.createPolyIDEheap();
+		} else {
+			return false;
+		}
+	}
+	
+	
+	/**
 	 * If in a shell buffer, process rest of the input; else we treat the buffer
 	 * as an ML buffer and send buffer to ML and process contents
 	 * 

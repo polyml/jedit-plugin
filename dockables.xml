@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE DOCKABLES SYSTEM "dockables.dtd">
+
+<DOCKABLES>
+	<DOCKABLE NAME="polyml-state" MOVABLE="TRUE">new polyml.StateViewDockable(view, position);</DOCKABLE>
+</DOCKABLES>

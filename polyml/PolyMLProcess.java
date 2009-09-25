@@ -97,6 +97,53 @@ public class PolyMLProcess {
 	}
 
 	
+	/**
+	 * create the polyml heap file for the ide.sml code, redefines use etc. 
+	 * 
+	 * @return true if IDE heap was successfully created
+	 */
+	public boolean createPolyIDEheap() {
+		//System.err.println("compiling IDE ML Code. ");
+		File ideSrc = null;
+		try {
+			ideSrc = File.createTempFile("poly_ide", ".sml");
+			ZipFile zip = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getZipFile();
+			InputStream in = zip.getInputStream(zip.getEntry("ide.sml"));
+			OutputStream out = new FileOutputStream(ideSrc);
+
+			// Transfer bytes from in to out
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+				out.write(buf, 0, len);
+			}
+			in.close();
+			out.close();
+
+			syncCompile(new CompileRequest("", ideSrc.getPath(), 
+					"use \"" + ideSrc.getPath() + "\"; \n" 
+					+ "PolyML.SaveState.saveState \"" + ideHeapFile + "\"; \n"));
+
+			// We tell the polyMLProcess that we now have a valid heap
+			// IMPROVE: deal with compile result? 
+			if(! ideHeapFile.exists()){ 
+				// r.requestID.equals(PolyMLPlugin.IDEPolyHeapFile) && r.isSuccess())
+				System.err.println("PolyML Failed to make IDE heap: " + ideHeapFile);
+				ideHeapFile = null;
+				return false;
+			}
+			return true;
+		} catch (IOException e) {
+			if(ideSrc == null) {
+				System.err.println("failed to create temporarily file for ide.sml compilation.");
+			} else {
+				System.err.println("failed to copy internal ide.sml to: " + ideSrc );
+			}
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
 	public boolean checkAndCreatePolyIDE() {
 		String settingsDir = jEdit.getSettingsDirectory();
 		if (settingsDir != null) {
@@ -104,40 +151,7 @@ public class PolyMLProcess {
 			long zipTime = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getFile().lastModified();
 
 			if ((! ideHeapFile.exists()) || (ideHeapFile.lastModified() < zipTime)) {
-				//System.err.println("compiling IDE ML Code. ");
-				try {
-					File ideSrc = File.createTempFile("poly_ide", ".sml");
-					ZipFile zip = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getZipFile();
-					InputStream in = zip.getInputStream(zip.getEntry("ide.sml"));
-					OutputStream out = new FileOutputStream(ideSrc);
-
-					// Transfer bytes from in to out
-					byte[] buf = new byte[1024];
-					int len;
-					while ((len = in.read(buf)) > 0) {
-						out.write(buf, 0, len);
-					}
-					in.close();
-					out.close();
-
-					syncCompile(new CompileRequest("", ideSrc.getPath(), 
-							"use \"" + ideSrc.getPath() + "\"; \n" 
-							+ "PolyML.SaveState.saveState \"" + ideHeapFile + "\"; \n"));
-
-					// We tell the polyMLProcess that we now have a valid heap
-					// IMPROVE: deal with compile result? 
-					if(! ideHeapFile.exists()){ 
-						// r.requestID.equals(PolyMLPlugin.IDEPolyHeapFile) && r.isSuccess())
-						System.err.println("Failed to make IDE heap.");
-						ideHeapFile = null;
-						return false;
-					}
-					return true;
-				} catch (IOException e) {
-					System.err.println("restartPolyML: failed to copy ide.sml");
-					e.printStackTrace();
-					return false;
-				}
+				return createPolyIDEheap();
 			} else {
 				return true;
 			}
