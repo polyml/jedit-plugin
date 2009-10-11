@@ -86,8 +86,6 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 
 	public static void debugMessage(String s) {
-		// synchronized(jEditGUILock){
-
 		if (Boolean.parseBoolean(jEdit
 				.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
 			if (debugBuffer == null) {
@@ -97,7 +95,6 @@ public class PolyMLPlugin extends EBPlugin {
 			}
 			debugBuffer.append(s);
 		}
-		// }
 	}
 
 	public static List<String> getPolyIDECmd() {
@@ -169,11 +166,14 @@ public class PolyMLPlugin extends EBPlugin {
 	 * @return true if managed to create the IDE heap
 	 */
 	static public boolean rebuildIDEHeap() {
+		boolean result;
 		if(restartPolyML()) {
-			return polyMLProcess.createPolyIDEheap();
+			result = polyMLProcess.createPolyIDEheap();
 		} else {
-			return false;
+			result = false;
 		}
+		System.err.println("rebuildIDEHeap done.");
+		return result;
 	}
 	
 	
@@ -206,6 +206,8 @@ public class PolyMLPlugin extends EBPlugin {
 
 						polyMLProcess.sendCompileBuffer(b, pane);
 					}
+					
+					System.err.println("compiled buffer: " + b.getPath());
 				} else {
 					JOptionPane
 							.showMessageDialog(
@@ -217,8 +219,6 @@ public class PolyMLPlugin extends EBPlugin {
 									"PolyML not running",
 									JOptionPane.WARNING_MESSAGE);
 				}
-
-				System.err.println("Not a ShellBuffer!");
 			} else {
 				s.sendBufferTextToEOF();
 			}

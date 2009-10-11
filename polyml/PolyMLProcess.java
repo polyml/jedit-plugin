@@ -98,12 +98,32 @@ public class PolyMLProcess {
 
 	
 	/**
+	 * Initialize the ideHeapFile variable, 
+	 * @return true if set ideHeapFile successfully (settings directory exists), false otherwise. 
+	 */
+	public boolean initIdeHeapFile() {
+		String settingsDir = jEdit.getSettingsDirectory();
+		if (settingsDir != null) {
+			ideHeapFile = new File(settingsDir + File.separator + "ide.polysave");
+			return true;
+		} else {
+			ideHeapFile = null;
+			System.err.println("PolyML needs to compile IDE ML code in " +
+					"the settings directory, but no settings directory if being used. " +
+			"You will not be able to use the IDE features of the polyml Plugin ");
+			return false;
+		}
+	}
+		
+	/**
 	 * create the polyml heap file for the ide.sml code, redefines use etc. 
 	 * 
 	 * @return true if IDE heap was successfully created
 	 */
 	public boolean createPolyIDEheap() {
-		//System.err.println("compiling IDE ML Code. ");
+		System.err.println("createPolyIDEheap... ");
+		if(! initIdeHeapFile()) { return false; }
+		
 		File ideSrc = null;
 		try {
 			ideSrc = File.createTempFile("poly_ide", ".sml");
@@ -120,9 +140,13 @@ public class PolyMLProcess {
 			in.close();
 			out.close();
 
+			System.err.println("sending compile request... ");
+
 			syncCompile(new CompileRequest("", ideSrc.getPath(), 
 					"use \"" + ideSrc.getPath() + "\"; \n" 
 					+ "PolyML.SaveState.saveState \"" + ideHeapFile + "\"; \n"));
+
+			System.err.println("compiled.");
 
 			// We tell the polyMLProcess that we now have a valid heap
 			// IMPROVE: deal with compile result? 
@@ -144,10 +168,12 @@ public class PolyMLProcess {
 		}
 	}
 	
+	/**
+	 * Check time-stamp and (re)create ide heap file if plugin file is newer than ide heapfile. 
+	 * @return true if up to date, false is there was a problem.
+	 */
 	public boolean checkAndCreatePolyIDE() {
-		String settingsDir = jEdit.getSettingsDirectory();
-		if (settingsDir != null) {
-			ideHeapFile = new File(settingsDir + File.separator + "ide.polysave");
+		if (initIdeHeapFile()) {
 			long zipTime = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getFile().lastModified();
 
 			if ((! ideHeapFile.exists()) || (ideHeapFile.lastModified() < zipTime)) {
@@ -156,10 +182,6 @@ public class PolyMLProcess {
 				return true;
 			}
 		} else {
-			ideHeapFile = null;
-			System.err.println("PolyML needs to compile IDE ML code in " +
-					"the settings directory, but no settings directory if being used. " +
-			"You will not be able to use the IDE features of the polyml Plugin ");
 			return false;
 		}
 	}
@@ -438,11 +460,17 @@ public class PolyMLProcess {
 	}
 	
 	
-	public synchronized void syncCompile(CompileRequest compileRequest) {
+	/** 
+	 * Perform a compile request, locking the thread until the result of the compile request is received. 
+	 * @param compileRequest
+	 */
+	public void syncCompile(CompileRequest compileRequest) {
 		synchronized(compileRequest) {
 			sendCompileRequest(compileRequest);
 			try {
+				System.err.println("thread waiting for compileRequest Response.");
 				compileRequest.wait();
+				System.err.println("compileRequest wait ended.");
 				//compileRequest.wait(5000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();

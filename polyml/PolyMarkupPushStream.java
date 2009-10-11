@@ -3,7 +3,6 @@ package polyml;
 import java.util.Iterator;
 
 import org.gjt.sp.jedit.Buffer;
-import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.TextArea;
@@ -93,20 +92,34 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		Buffer srcBuffer = jEdit.getBuffer(cr.fileName);
 		//Buffer srcBuffer = pInfo.editPane.getBuffer();
 		
-		if(l.locGiven()) {
-			Buffer locBuffer = jEdit.getBuffer(l.filenameLoc);
-			if(locBuffer != null) {
-				int line = locBuffer.getLineOfOffset(l.startLoc);
-				int line_offset = l.startLoc - locBuffer.getLineStartOffset(line);
-				int end_line = locBuffer.getLineOfOffset(l.endLoc);
-				int end_offset = 0;
-				if (end_line == line) {
-					end_offset = l.endLoc - locBuffer.getLineStartOffset(end_line);
+		synchronized (PolyMLPlugin.jEditGUILock) {
+			if(l.locGiven()) {
+				Buffer locBuffer = jEdit.getBuffer(l.filenameLoc);
+				if(locBuffer != null) {
+					int line = locBuffer.getLineOfOffset(l.startLoc);
+					int line_offset = l.startLoc - locBuffer.getLineStartOffset(line);
+					int end_line = locBuffer.getLineOfOffset(l.endLoc);
+					int end_offset = 0;
+					if (end_line == line) {
+						end_offset = l.endLoc - locBuffer.getLineStartOffset(end_line);
+					}
+					
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.WARNING, locBuffer.getPath(), line,
+							line_offset, end_offset, "Location of: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
+				} else {
+					int line = srcBuffer.getLineOfOffset(l.start);
+					int line_offset = l.start - srcBuffer.getLineStartOffset(line);
+					int end_line = srcBuffer.getLineOfOffset(l.end);
+					int end_offset = 0;
+					if (end_line == line) {
+						end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
+					}
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.WARNING, cr.fileName, line,
+							line_offset, end_offset, "No such file: `" + l.filenameLoc + "` : " 
+							+ l.startLoc + ":" + l.endLoc));
 				}
-
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.WARNING, locBuffer.getPath(), line,
-						line_offset, end_offset, "Location of: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
 			} else {
 				int line = srcBuffer.getLineOfOffset(l.start);
 				int line_offset = l.start - srcBuffer.getLineStartOffset(line);
@@ -115,28 +128,15 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				if (end_line == line) {
 					end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
 				}
+				
 				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.WARNING, cr.fileName, line,
-						line_offset, end_offset, "No such file: `" + l.filenameLoc + "` : " 
-						+ l.startLoc + ":" + l.endLoc));
+						errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
+						line_offset, end_offset, "No decloration for: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
 			}
-		} else {
-			int line = srcBuffer.getLineOfOffset(l.start);
-			int line_offset = l.start - srcBuffer.getLineStartOffset(line);
-			int end_line = srcBuffer.getLineOfOffset(l.end);
-			int end_offset = 0;
-			if (end_line == line) {
-				end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
-			}
-			
-			errorSource.addError(new DefaultErrorSource.DefaultError(
-					errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
-					line_offset, end_offset, "No decloration for: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ));
 		}
 	}
-
 	public synchronized void add(PolyMarkup m) {
-		//System.err.println("PolyMarkupPushStream: " + m.toPrettyString());
+		System.err.println("PolyMarkupPushStream.add: " + m.toPrettyString());
 		
 		//PolyMLPlugin.debugMessage("\n\n"); 
 		//PolyMLPlugin.debugMessage(m.toPrettyString()); 
@@ -157,75 +157,90 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				cr.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
 			
-			String fileName;
-			
-			Buffer buffer = jEdit.getBuffer(cr.fileName);
-			
-			//String fileName = i.buffer.getPath();
-			//Buffer buffer = i.buffer;
-			//System.err.println("Completed compile for file: " + cr.fileName);
-			if(buffer == null) {
-				//System.err.println("buffer for: " + cr.fileName + " is null! opening it ");
-				buffer = jEdit.openFile((View) null, cr.fileName);
-				if(buffer == null) {
-					System.err.println("cannot open: " +  cr.fileName);
-					fileName = cr.fileName;
-				} else {
-					fileName = buffer.getPath();
-				}
-			} else {
-				fileName = buffer.getPath();
-			}
-			
-			errorSource.removeFileErrors(fileName);
+			System.err.println("PolyMarkupPushStream.add: about to enter GUI lock");
+			synchronized (PolyMLPlugin.jEditGUILock) {
+				String fileName = cr.fileName;
+				System.err.println("PolyMarkupPushStream.add: in GUI lock");
 
-			if(r.isBug() || buffer == null) {
-				errorSource.addError(new DefaultErrorSource.DefaultError(
-						errorSource, ErrorSource.ERROR, fileName, 0,
-						0, 0, "BUG: Failed to check, or have null buffer."));
-			} else {
-				if(r.isSuccess()){
-					errorSource.addError(new DefaultErrorSource.DefaultError(
-							errorSource, ErrorSource.WARNING, fileName, 0,
-							0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
-				} else {
-					errorSource.addError(new DefaultErrorSource.DefaultError(
-							errorSource, ErrorSource.WARNING, fileName, 0,
-							0, 0, "Compilation found errors of kind: " + r.status + " (parse id: " + r.parseID + ")"));
-				}
+				Buffer buffer = jEdit.getBuffer(cr.fileName);
 				
-				// can still have errors even is success: e.g. warnings. 
-				for (PolyMLError e : r.errors) {
-					
-					//System.err.println("PolyMarkupPushStream: error at: " + e.startPos + ":" + e.endPos);
-					//System.err.println("going thruogh the error list...");
-					
-					try {
-						int line = buffer.getLineOfOffset(e.startPos);
-						int line_offset = e.startPos - buffer.getLineStartOffset(line);
-						int end_line = buffer.getLineOfOffset(e.endPos);
-						int end_offset = 0;
-						if (end_line == line) {
-							end_offset = e.endPos - buffer.getLineStartOffset(end_line);
-						}
-					
-						int errorKind;
-						if(e.kind == PolyMLError.KIND_FATAL || e.kind == PolyMLError.KIND_EXCEPTION){
-							errorKind = ErrorSource.ERROR;
-						} else {
-							errorKind = ErrorSource.WARNING;
-						}
-						
-						errorSource.addError(new DefaultErrorSource.DefaultError(
-							errorSource, errorKind, fileName, line,
-							line_offset, end_offset, e.message));
+				// COMMENTED OUT: auto-open of compiled files: causes AWT thread lockup - I don't know why!?
+//				System.err.println("PolyMarkupPushStream.add: in GUI lock2");
+//
+//				//String fileName = i.buffer.getPath();
+//				//Buffer buffer = i.buffer;
+//				//System.err.println("Completed compile for file: " + cr.fileName);
+//				if(buffer == null) {
+//					//System.err.println("buffer for: " + cr.fileName + " is null! opening it ");
+//					buffer = jEdit.openFile((View) null, cr.fileName);
+//					if(buffer == null) {
+//						System.err.println("cannot open: " +  cr.fileName);
+//						fileName = cr.fileName;
+//						System.err.println("PolyMarkupPushStream.add: in GUI lock2.1");
+//					} else {
+//						fileName = buffer.getPath();
+//						System.err.println("PolyMarkupPushStream.add: in GUI lock2.2");
+//					}
+//				} else {
+//					fileName = buffer.getPath();
+//					System.err.println("PolyMarkupPushStream.add: in GUI lock2.3");
+//				}
+//				
+//				System.err.println("PolyMarkupPushStream.add: in GUI lock3");
 
-					} catch(java.lang.ArrayIndexOutOfBoundsException ex) {
-						ex.printStackTrace();
+				errorSource.removeFileErrors(fileName);
+	
+//				(r.isBug() || buffer == null) 
+				if(r.isBug()) {
+					errorSource.addError(new DefaultErrorSource.DefaultError(
+							errorSource, ErrorSource.ERROR, fileName, 0,
+							0, 0, "BUG: Failed to check, or have null buffer."));
+				} else {
+					if(r.isSuccess()){
+						errorSource.addError(new DefaultErrorSource.DefaultError(
+								errorSource, ErrorSource.WARNING, fileName, 0,
+								0, 0, "Compiled Successfully! (parse id: " + r.parseID + ")"));
+					} else {
+						errorSource.addError(new DefaultErrorSource.DefaultError(
+								errorSource, ErrorSource.WARNING, fileName, 0,
+								0, 0, "Compilation found errors of kind: " + r.status + " (parse id: " + r.parseID + ")"));
 					}
-				}
-			}
-			
+					
+					if(buffer != null) {
+						// can still have errors even is success: e.g. warnings. 
+						for (PolyMLError e : r.errors) {
+							
+							//System.err.println("PolyMarkupPushStream: error at: " + e.startPos + ":" + e.endPos);
+							//System.err.println("going thruogh the error list...");
+							
+							try {
+								int line = buffer.getLineOfOffset(e.startPos);
+								int line_offset = e.startPos - buffer.getLineStartOffset(line);
+								int end_line = buffer.getLineOfOffset(e.endPos);
+								int end_offset = 0;
+								if (end_line == line) {
+									end_offset = e.endPos - buffer.getLineStartOffset(end_line);
+								}
+							
+								int errorKind;
+								if(e.kind == PolyMLError.KIND_FATAL || e.kind == PolyMLError.KIND_EXCEPTION){
+									errorKind = ErrorSource.ERROR;
+								} else {
+									errorKind = ErrorSource.WARNING;
+								}
+								
+								errorSource.addError(new DefaultErrorSource.DefaultError(
+									errorSource, errorKind, fileName, line,
+									line_offset, end_offset, e.message));
+		
+							} catch(java.lang.ArrayIndexOutOfBoundsException ex) {
+								ex.printStackTrace();
+							}
+						} // for errors
+					}// if buffer != null
+				} // no bug
+			} // sync
+			System.err.println("PolyMarkupPushStream.add: out of GUI lock");
 		} else if(m.kind == PolyMarkup.KIND_PROPERTIES) {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest lastCompile = compileInfos.getFromParseID(l.parseID);
@@ -242,8 +257,6 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
 			
-			
-			
 			if(jEdit.getActiveView().getBuffer().getPath().equals(cr.fileName)) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 				Buffer srcBuffer = jEdit.getBuffer(cr.fileName); 
@@ -256,17 +269,19 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 					end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
 				}
 				
-				if(l.markup.hasNext()) {
-					String type_string = l.markup.next().getContent();
-					errorSource.addError(new DefaultErrorSource.DefaultError(
-							errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
-							line_offset, end_offset, "`" + type_string + "` is the type of: `" 
-							+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
-				} else {
-					errorSource.addError(new DefaultErrorSource.DefaultError(
-							errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
-							line_offset, end_offset, "Not a value, so no type: `" 
-							+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
+				synchronized (PolyMLPlugin.jEditGUILock) { // hack; should be in error src
+					if(l.markup.hasNext()) {
+						String type_string = l.markup.next().getContent();
+						errorSource.addError(new DefaultErrorSource.DefaultError(
+								errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
+								line_offset, end_offset, "`" + type_string + "` is the type of: `" 
+								+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
+					} else {
+						errorSource.addError(new DefaultErrorSource.DefaultError(
+								errorSource, ErrorSource.WARNING, srcBuffer.getPath(), line,
+								line_offset, end_offset, "Not a value, so no type: `" 
+								+ l.getSrcLocTextOfBuffer(srcBuffer) + "`"));
+					}
 				}
 			} else {
 				System.err.println("different buffer shown than one which asked for type.");
@@ -284,7 +299,11 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 			}
+		} else {
+			System.err.println("Unkown message kind ignored: " + m.kind);
 		}
+		
+		System.err.println("PolyMarkupPushStream.add: end.");
 	}
 
 	public void add(PolyMarkup c, boolean isMore) { add(c); }
