@@ -66,7 +66,6 @@ plugin.polyml.PolyMLPlugin.menu=\
   polyml-menu.mitem-prev_command \
   polyml-menu.mitem-next_command \
   - \
-  polyml-menu.mitem-test \
   polyml-menu.mitem-rebuild_ide_heap
   
 #  - \
@@ -100,7 +99,7 @@ polyml-menu.mitem-prev_command.label=Previous ShellBuffer Command
 polyml-menu.mitem-next_command.label=Next ShellBuffer Command
 
 polyml-menu.mitem-test.label=test action
-polyml-menu.mitem-rebuild_ide_heap=Rebuild the IDE base heap file
+polyml-menu.mitem-rebuild_ide_heap=Rebuild the IDE heap file
 
 #polyml-menu.mitem-send_cur_buffer.label=Send Buffer to ShellBuffer
 #polyml-menu.mitem-send_cur_command.label=Send Line/Command to ShellBuffer

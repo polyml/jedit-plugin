@@ -1,152 +1,148 @@
 <?xml version="1.0"?>
-<!-- Action definition file for the PolyML Plugin -->
-<!-- Actions in here corespond to the menu item names in the props file. -->
+	<!-- Action definition file for the PolyML Plugin -->
+	<!--
+		Actions in here correspond to the menu item names in the props file.
+	-->
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
 
 	<ACTION NAME="polyml-menu.mitem-rebuild_ide_heap">
 		<CODE>
-		polyml.PolyMLPlugin.rebuildIDEHeap();
+			polyml.PolyMLPlugin.rebuildIDEHeap();
 		</CODE>
 	</ACTION>
 
 	<!-- *************************************************************** -->
-	
+
 	<ACTION NAME="polyml-menu.mitem-get_properties">
 		<CODE>
-		polyml.PolyMLPlugin.sendGetProperies(editPane);
+			polyml.PolyMLPlugin.sendGetProperies(editPane);
 		</CODE>
 	</ACTION>
-	
-   <ACTION NAME="polyml-menu.mitem-get_type">
+
+	<ACTION NAME="polyml-menu.mitem-get_type">
 		<CODE>
-		polyml.PolyMLPlugin.sendGetType(editPane);
-		</CODE>
-	</ACTION>
-	
-	<!-- *************************************************************** -->
-	
-   <ACTION NAME="polyml-menu.mitem-move_to_parent">
-		<CODE>
-		polyml.PolyMLPlugin.sendMoveToParent(editPane);
-		</CODE>
-	</ACTION>
-   <ACTION NAME="polyml-menu.mitem-move_to_child">
-		<CODE>
-		polyml.PolyMLPlugin.sendMoveToFirstChild(editPane);
-		</CODE>
-	</ACTION>
-   <ACTION NAME="polyml-menu.mitem-move_to_next">
-		<CODE>
-		polyml.PolyMLPlugin.sendMoveToNext(editPane);
-		</CODE>
-	</ACTION>
-   <ACTION NAME="polyml-menu.mitem-move_to_previous">
-		<CODE>
-		polyml.PolyMLPlugin.sendMoveToPrevious(editPane);
+			polyml.PolyMLPlugin.sendGetType(editPane);
 		</CODE>
 	</ACTION>
 
 	<!-- *************************************************************** -->
-   <ACTION NAME="polyml-menu.mitem-location_opened">
+
+	<ACTION NAME="polyml-menu.mitem-move_to_parent">
 		<CODE>
-		polyml.PolyMLPlugin.sendLocationOpened(editPane);
+			polyml.PolyMLPlugin.sendMoveToParent(editPane);
 		</CODE>
 	</ACTION>
-   <ACTION NAME="polyml-menu.mitem-location_of_parent_structure">
+	<ACTION NAME="polyml-menu.mitem-move_to_child">
 		<CODE>
-		polyml.PolyMLPlugin.sendLocationOfParentStructure(editPane);
+			polyml.PolyMLPlugin.sendMoveToFirstChild(editPane);
 		</CODE>
 	</ACTION>
-   <ACTION NAME="polyml-menu.mitem-location_declared">
+	<ACTION NAME="polyml-menu.mitem-move_to_next">
 		<CODE>
-		polyml.PolyMLPlugin.sendLocationDeclared(editPane);
+			polyml.PolyMLPlugin.sendMoveToNext(editPane);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-move_to_previous">
+		<CODE>
+			polyml.PolyMLPlugin.sendMoveToPrevious(editPane);
+		</CODE>
+	</ACTION>
+
+	<!-- *************************************************************** -->
+	<ACTION NAME="polyml-menu.mitem-location_opened">
+		<CODE>
+			polyml.PolyMLPlugin.sendLocationOpened(editPane);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-location_of_parent_structure">
+		<CODE>
+			polyml.PolyMLPlugin.sendLocationOfParentStructure(editPane);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-location_declared">
+		<CODE>
+			polyml.PolyMLPlugin.sendLocationDeclared(editPane);
 		</CODE>
 	</ACTION>
 	<!-- *************************************************************** -->
 
 	<ACTION NAME="polyml-menu.mitem-process_buffer">
 		<CODE>
-		polyml.PolyMLPlugin.sendBufferToPolyML(buffer, editPane);
+			polyml.PolyMLPlugin.sendBufferToPolyML(buffer, editPane);
 		</CODE>
 	</ACTION>
-	
+
 	<ACTION NAME="polyml-menu.mitem-cancel">
 		<CODE>
-		polyml.PolyMLPlugin.sendCancelToPolyML();
+			polyml.PolyMLPlugin.sendCancelToPolyML();
 		</CODE>
 	</ACTION>
 	<!-- *************************************************************** -->
-	
+
 	<ACTION NAME="polyml-menu.mitem-restart_polyml">
 		<CODE>
-		polyml.PolyMLPlugin.restartPolyML();
+			polyml.PolyMLPlugin.restartPolyML();
 		</CODE>
 	</ACTION>
 	<ACTION NAME="polyml-menu.mitem-new_debug_buffer">
 		<CODE>
-		polyml.PolyMLPlugin.newDebugShellBuffer();
+			polyml.PolyMLPlugin.newDebugShellBuffer();
 		</CODE>
 	</ACTION>
-	
+
+	<!--
+		***************************************************************
+		<ACTION NAME="polyml-menu.mitem-test"> <CODE>
+		polyml.PolyMLPlugin.test(); </CODE> </ACTION>
+	-->
+
 	<!-- *************************************************************** -->
-	<ACTION NAME="polyml-menu.mitem-test">
-    <CODE>
-    polyml.PolyMLPlugin.test();
-    </CODE>
-  </ACTION>
-  
-  <!-- *************************************************************** -->
-  
+
 	<ACTION NAME="polyml-menu.mitem-new">
 		<CODE>
-		polyml.PolyMLPlugin.newShellBuffer();
+			polyml.PolyMLPlugin.newShellBuffer();
 		</CODE>
 	</ACTION>
 	<ACTION NAME="polyml-menu.mitem-start">
 		<CODE>
-		polyml.PolyMLPlugin.startShellInBuffer(buffer);
+			polyml.PolyMLPlugin.startShellInBuffer(buffer);
 		</CODE>
-  </ACTION>
-  <ACTION NAME="polyml-menu.mitem-stop">
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-stop">
 		<CODE>
-    polyml.PolyMLPlugin.stopShellInBuffer(buffer);
+			polyml.PolyMLPlugin.stopShellInBuffer(buffer);
 		</CODE>
-  </ACTION>
-  <ACTION NAME="polyml-menu.mitem-restart">
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-restart">
 		<CODE>
-		polyml.PolyMLPlugin.restartShellInBuffer(buffer);
+			polyml.PolyMLPlugin.restartShellInBuffer(buffer);
     </CODE>
-  </ACTION>
-  <ACTION NAME="polyml-menu.mitem-stop_all">
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-stop_all">
 		<CODE>
-    polyml.PolyMLPlugin.stopAllShellBuffers();
+			polyml.PolyMLPlugin.stopAllShellBuffers();
 		</CODE>
-  </ACTION>
-    <ACTION NAME="polyml-menu.mitem-prev_command">
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-prev_command">
 		<CODE>
-    polyml.PolyMLPlugin.prevCommand(buffer);
+			polyml.PolyMLPlugin.prevCommand(buffer);
 		</CODE>
-  </ACTION>
-  <ACTION NAME="polyml-menu.mitem-next_command">
-    <CODE>
-    polyml.PolyMLPlugin.nextCommand(buffer);
+	</ACTION>
+	<ACTION NAME="polyml-menu.mitem-next_command">
+		<CODE>
+			polyml.PolyMLPlugin.nextCommand(buffer);
     </CODE>
-  </ACTION>
-  
-  	<!-- *************************************************************** -->
-  
-<!-- 
-  <ACTION NAME="polyml-menu.mitem-send-cur-buffer">
-		<CODE>
-    	System.err.println("polyml-menu.mitem-send_cur_buffer");
-    	</CODE>
-  </ACTION>
-  <ACTION NAME="polyml-menu.mitem-send-cur-command">
-		<CODE>
-    	System.err.println("polyml-menu.mitem-send_cur_command");		
-    	</CODE>
-  </ACTION>
-  -->
+	</ACTION>
+
+	<!-- *************************************************************** -->
+
+	<!--
+		<ACTION NAME="polyml-menu.mitem-send-cur-buffer"> <CODE>
+		System.err.println("polyml-menu.mitem-send_cur_buffer"); </CODE>
+		</ACTION> <ACTION NAME="polyml-menu.mitem-send-cur-command"> <CODE>
+		System.err.println("polyml-menu.mitem-send_cur_command"); </CODE>
+		</ACTION>
+	-->
 
 </ACTIONS>

@@ -49,6 +49,8 @@
 			includeJavaRuntime="yes">
 			<classpath refid="project.class.path"/>
 			<exclude name="unused/**"/>
+			<exclude name="${build.dir}"/>
+			<exclude name="${build.dir}/**/*"/>
 		</javac>
 	</target>
 
@@ -57,6 +59,8 @@
 		<mkdir dir="${install.dir}"/>
 		<copy todir="${build.dir}">
 			<fileset dir="${src.dir}">
+				<exclude name="${build.dir}"/>
+				<exclude name="${build.dir}/**/*"/>
 				<include name="**/*.props"/>
 				<include name="**/*.xml"/>
         <include name="**/*.sml"/>
@@ -68,8 +72,6 @@
 				<exclude name="**/unused/*"/>
 				<exclude name="**/tmp"/>
 				<exclude name="**/tmp/*"/>
-				<exclude name="**/build"/>
-				<exclude name="**/build/*"/>
 			</fileset>
 		</copy>
 		<jar jarfile="${install.dir}/${jar.name}">
