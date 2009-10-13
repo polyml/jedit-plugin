@@ -15,7 +15,7 @@ The file "PolyML.jar" contains the compiled plugin, put this in the "jars" direc
  (re) Compile
 --------------
 
-You can re-compile the plugin using ant. This requires that you specify the location of your installed jEdit in a "build.properties" file. This is so that ant can find the jEdit.Jar file and the needed plugins. You can copy and edit the "build.properties.sample" file for this.
+You can re-compile the plugin using ant. This requires that you specify the location of your installed jEdit in a "build.properties" file. This is so that ant can find the jEdit.Jar file and the needed plugins. For this, you can copy and edit the "build.properties.sample" file to "build.properties" (leaving it in the same directory).
 
 Note that the PolyML plugin requires the ErrorList plugin to be installed. 
 

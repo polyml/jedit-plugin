@@ -177,6 +177,8 @@ public class PolyMLProcess {
 			long zipTime = jEdit.getPlugin("polyml.PolyMLPlugin").getPluginJAR().getFile().lastModified();
 
 			if ((! ideHeapFile.exists()) || (ideHeapFile.lastModified() < zipTime)) {
+				System.err.println("ideHeap missing: " + (! ideHeapFile.exists()));
+				System.err.println("heap file modified before zip file: " + (ideHeapFile.lastModified() < zipTime));
 				return createPolyIDEheap();
 			} else {
 				return true;
