@@ -64,7 +64,33 @@ select <code>PolyML-Plugin</code> from the <code>Edit Shortcuts</code>
 pop-up menu to see and edit only the shortcuts for this plugin.
 </p>
 
-<h2>Features of the Plugin</h2>
+<h2>Using the Plugin</h2>
+
+There are two ways to use the Plugin: 
+
+<ul>
+<li><b>a Shell buffer</b>: select new shell buffer from PolyML-Plugin
+(sub)menu. This creates a new buffer which, whenever you run the
+"Process Buffer in PolyML" command, will send all output after the
+prompt (or vertical red bar if the prompt have been deleted), to ML.
+</li>
+
+<li><b>the IDE mode</b>: open the root file of your project (one which
+has a <code>use</code> for each other file). The run the <code>Process
+Buffer in PolyML</code> command. Error will be listed in the error list
+window/panel. If error is in a used file, you get will get a not-very
+informative error, but it will be at the line of
+the <code>use</code>. Open up that file and then run the <code>Process
+buffer in PolyML</code> command again. Now you will see the errors in
+the error list.
+<br><br>
+The IDE mode also lets you inspect types of sub-expressions (for files
+that have been parsed successfully, but which fail at
+type-checking). Select the sub-expression you want to know the type
+of, and then use the command <code>Get Type at Cursor/Selection</code>. The type
+is printed as a warning in the Error list window/panel.
+</li>
+</ul>
 
 <h3>Shell buffer</h3>
 
