@@ -3,7 +3,6 @@
 <head>
   <title>The jEdit PolyML Plugin</title>
 
-
   <style type="text/css">
 code { font-family: Courier New,Courier,monospace;
 }
@@ -30,24 +29,39 @@ Lesser General Public License</a>, and is hosted by sourceforge
 at <a href="http://sourceforge.net/projects/polyml/">http://sourceforge.net/projects/polyml/</a>
 </p>
 
-<h2>Installing</h2>
+<h2>Download, Install and Setup</h2>
+
+<h3>Download and Dependencies</h3>
 
 <p>The plugin is a self-contained jar file, but assumes you have
 installed
-<a href="http://www.jedit.org/">jEdit</a> (tested on
-version 4.3 pre 16) as well as <a href="http://www.polyml.org/">PolyML</a>
-(tested with version 5.3). Currently, it also uses the jEdit <a href="http://plugins.jedit.org/plugins/?ErrorList">ErrorList
-plugin</a>, so you will need to install that first. This can be
-done easily using the Plugin Manager within jEdit. <br>
+<a href="http://www.jedit.org/">jEdit</a> (tested on version 4.3) as
+well as <a href="http://www.polyml.org/">PolyML</a> (tested with
+version 5.3). Currently, it also uses the
+jEdit <a href="http://plugins.jedit.org/plugins/?ErrorList">ErrorList
+plugin</a>, so you will need to install that first. This can be done
+easily using the Plugin Manager within jEdit.
 
-<br>
-
+<h3>Installation</h3>
 To install the PolyML plugin, you need to place it into
 either your jEdit's "<code>jars</code>" subdirectory of its
 install directory, or your user account's jEdit "<code>jars</code>"
 subdirectory - in unix systems this is "<code>.jedit/jars</code>".
 When you then startup jEdit you should have a new menu item within
 the&nbsp;<code>Plugins</code> menu called&nbsp;<code>PolyML-Plugin</code>.
+
+<h3>Setup</h3>
+Once you have installed the plugin, feedback is presented through the
+<a href="http://plugins.jedit.org/plugins/?ErrorList">error list
+plugin</a>. Select <code>error list</code> from
+the <code>ErrorList</code> submenu of the <code>Plugins</code> menu to
+bring up the error list panel which will give feedback. I normally
+dock this at the bottom of the editing window. It can also be useful
+to bind the PolyML jedit plugin commands, such as process buffer in
+ML, to key combination. You can do this from the <code>Global
+Options...</code> submenu of the <code>Utilities</code> menu. Then
+select <code>PolyML-Plugin</code> from the <code>Edit Shortcuts</code>
+pop-up menu to see and edit only the shortcuts for this plugin.
 </p>
 
 <h2>Features of the Plugin</h2>
@@ -66,18 +80,16 @@ editing tools for that buffer.&nbsp;<br>
 
 <h3>PolyML IDE protocol</h3>
 
-<p>The PolyML Plugin provide a method to interact with PolyML's
-IDE
+<p>The PolyML Plugin provide a method to interact with PolyML's IDE
 protocol. This allows:<br>
 
 </p>
 
 <ul>
 
-  <li>the parsing/type-checking/evaluation of buffers by ML.
-Error
-messages and warnings displayed in the ErrorList panel, provided by the
-ErrorList plugin;</li>
+  <li>the parsing/type-checking/evaluation of buffers by ML.  Error
+messages and warnings displayed in the ErrorList panel, provided by
+the ErrorList plugin;</li>
 
   <li>get the type of a value;</li>
 
