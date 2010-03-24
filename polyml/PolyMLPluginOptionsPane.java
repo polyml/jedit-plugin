@@ -18,36 +18,26 @@
  */
 package polyml;
 
-import java.awt.FlowLayout;
-
 import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import org.gjt.sp.jedit.AbstractOptionPane;
 import org.gjt.sp.jedit.jEdit;
 
 /**
- *
  * @author     Lucas Dixon
- * @version    1.0
  */
 public class PolyMLPluginOptionsPane extends AbstractOptionPane
 {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -9030659155170934671L;
-	
+
 	/** the polyml command to run for the ide mode: with markup in messages, etc */
-	private JTextArea polyideCommand;
+	private JTextField polyideCommand;
 	/** Textfield the shell Command to start */
-	private JTextArea shellCommand;
+	private JTextField shellCommand;
 	/** Extra text to put between process output and user input */
-	private JTextArea shellPrompt;
+	private JTextField shellPrompt;
 	/** */
 	private JCheckBox outputToDebugBuffer;
 	private JCheckBox useFileDir;
@@ -56,7 +46,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	 * Default constructor. Note that the name is important!
 	 */
 	public PolyMLPluginOptionsPane() {
-		super("PolyML Plugin Options");
+		super(jEdit.getProperty("options.polyml-options.label", "PolyML"));
 	}
 
 	/**
@@ -64,31 +54,26 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	 * and labels read from the properties for this plugin
 	 */
 	public void _init() {
-		/** Panel containing components controlling the Shell command */
-		JPanel p;
-		
 		outputToDebugBuffer = new JCheckBox("Copy output to debug buffer", 
 				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER)));
-		//p = createLabelledComponent(, outputToDebugBuffer);
 		addComponent(outputToDebugBuffer);
 		
-		useFileDir = new JCheckBox("Start ML from the files directory? \n" +
-				" (otherwise starts polyML from a file's project directory.)", 
+		useFileDir = new JCheckBox("Start ML from the files directory?", 
 				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR)));
-		//p = createLabelledComponent(, outputToDebugBuffer);
+		useFileDir.setToolTipText("If unchecked, starts polyML from a file's project directory.");
 		addComponent(useFileDir);
 		
-		polyideCommand = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 3, 50);
-		p = createLabelledComponent("PolyML IDE Command: ", polyideCommand);
-		addComponent(p);
+		polyideCommand = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 25);
+		polyideCommand.setToolTipText("Command to start PolyML for processing edited files.");
+		addComponent("PolyML IDE Command", polyideCommand);
 		
-		shellCommand = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND), 3, 50);
-		p = createLabelledComponent("PolyML Shell Command: ", shellCommand);
-		addComponent(p);
+		shellCommand = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND), 25);
+		shellCommand.setToolTipText("Command to stary PolyML for interactive buffers.");
+		addComponent("PolyML Shell Command", shellCommand);
 		
-		shellPrompt = new JTextArea(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT), 3, 50);
-		p = createLabelledComponent("Interactive Shell Prompt: ", shellPrompt);
-		addComponent(p);
+		shellPrompt = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT), 10);
+		shellPrompt.setToolTipText("Prompt string displayed by interactive shell buffers.");
+		addComponent("Interactive Shell Prompt", shellPrompt);
 	}
 
 	/**
@@ -109,22 +94,6 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 					, JOptionPane.WARNING_MESSAGE);
 		}
 	}
-
-	/** 
-	 * Create a JLabel containing the given string and put it together
-	 * with the given component into a panel The two are separated by a colon,
-	 * and are layed out using the flow layout manager.
-	 *
-	 * @param label label to the left of the component.
-	 * @param component appears to the right of the label.
-	 * @return panel holding labele and component.
-	 */
-	private JPanel createLabelledComponent(String label, JComponent component) {
-		JPanel p = new JPanel();
-		p.setLayout(new FlowLayout());
-		p.add(new JLabel(label));
-		p.add(component);
-		return p;
-	}
+	
 }
 
