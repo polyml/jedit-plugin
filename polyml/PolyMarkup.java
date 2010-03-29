@@ -7,11 +7,15 @@ import java.util.List;
 import pushstream.PushStream;
 
 
+/**
+ * Represents PolyML IDE Markup elements.
+ * @see http://www.polyml.org/docs/IDEProtocol.html for details.
+ */
 public class PolyMarkup implements PushStream<Character> {
 	public final static int ESC = 0x1b;
-	public final static int EOT = -1; // end of transmition
+	public final static int EOT = -1; // end of transmission
 	
-	// exlusive possible values of status
+	// exclusive possible values of status
 	public final static int STATUS_OUTSIDE = 1;
 	public final static int STATUS_OUTSIDE_ESC = 2;
 	public final static int STATUS_OUTSIDE_IN_D = 3;
@@ -39,7 +43,7 @@ public class PolyMarkup implements PushStream<Character> {
 	public static final char KIND_HELLO = 'H';
 	
 	
-	// status of lazy markup
+	/** status of lazy markup */
 	int status;
 
 	// data for lazy markup
@@ -50,13 +54,18 @@ public class PolyMarkup implements PushStream<Character> {
 
 	PushStream<PolyMarkup> markupStream;
 
-	// create a new empty markup, that, when we get a completed markup, sends it onto the given stream;
+	/**
+	 * create a new empty markup, that, when we get a completed markup, sends it onto the given stream;
+	 * @param a the stream to send data to
+	 */
 	public PolyMarkup(PushStream<PolyMarkup> a) {
 		markupStream = a;
 		resetMarkup();
 	}
 
-	// start again from having seen no markup. 
+	/**
+	 * Start (again): resets (as if) having seen no markup. 
+	 */
 	public void resetMarkup() {
 		kind = null;
 		fields = null;
@@ -65,7 +74,11 @@ public class PolyMarkup implements PushStream<Character> {
 		status = STATUS_OUTSIDE;
 	}
 	
-	// create element with content and no sub-elements. 
+	/**
+	 * Create element with content and no sub-elements.
+	 * @param c type of element
+	 * @param s element content.
+	 */
 	public PolyMarkup(Character c, String s) {
 		markupStream = null;
 		kind = c;
@@ -74,7 +87,11 @@ public class PolyMarkup implements PushStream<Character> {
 		parents = null;
 	}
 	
-	// create an element with no content, but with subelements. 
+	/**
+	 * Create an element with no content, but with subelements. 
+	 * @param c type of element
+	 * @param fs list of sub-elements
+	 */
 	public PolyMarkup(Character c, List<PolyMarkup> fs) {
 		markupStream = null;
 		fields = fs;
@@ -115,10 +132,16 @@ public class PolyMarkup implements PushStream<Character> {
 		fields.add(f);
 	}
 	
-	// nothing to do when the stream is closed. 
-	public void close() {
-	}
-	
+	/**
+	 * Close the stream (does nothing).
+	 */
+	public void close() { }
+
+	/**
+	 * Adds an empty element of given type to the markup.
+	 * @param c kind of element
+	 * @param isMore ignored at present.
+	 */
 	public void add(Character c, boolean isMore) { add(c); }
 	
 	
@@ -169,7 +192,10 @@ public class PolyMarkup implements PushStream<Character> {
 		}
 	}
 	
-	// add a character to the markup seen so far
+	/**
+	 * Add a character to the markup seen so far
+	 * @see pushstream.PushStream#add(java.lang.Object)
+	 */
 	public void add(Character c) {
 		//System.err.println("PolyMarkup.add: " + c);
 
@@ -281,7 +307,10 @@ public class PolyMarkup implements PushStream<Character> {
 		return (ESC + Character.toUpperCase(k) + body + ESC + Character.toLowerCase(k));
 	}
 	
-
+	/**
+	 * Produces a string format of this Markup object, formatted for human reading.
+	 * Recurses to include children.
+	 */
 	public String toPrettyString() {
 		String body = new String();
 		boolean hasPrev = false;
@@ -308,7 +337,10 @@ public class PolyMarkup implements PushStream<Character> {
 		return ("`" + startKindString + body + "`" + endKindString + "\n");
 	}
 	
-	
+	/**
+	 * Produces a string format of this Markup object, formatted for machine reading.
+	 * Recurses to include children.
+	 */
 	public String toXMLString() {
 		String body = new String();
 		boolean hasPrev = false;
@@ -331,8 +363,20 @@ public class PolyMarkup implements PushStream<Character> {
 		return ("<" + kindString + ">" + body + "</" + kindString + ">\n");
 	}
 	
-
+	/**
+	 * Extracts location information from appropriate PolyMarkup for
+	 * representation as HTML-style strings.
+	 * </pre>
+	 * @see StateViewDockable#uriof(errorlist.ErrorSource.Error)
+	 */
+	public String toHTMLString() {
+		throw new UnsupportedOperationException("Not yet implemented.");
+	}
 	
+	/**
+	 * Replaces escape characters with the backquote character.
+	 * @return a modified string.
+	 */
 	public static String explicitEscapes(String s) {
 		return s.replace((char)ESC, '`');
 	}
