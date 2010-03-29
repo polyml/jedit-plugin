@@ -38,6 +38,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	private JTextField shellCommand;
 	/** Extra text to put between process output and user input */
 	private JTextField shellPrompt;
+	private JTextField cssFile;
 	/** */
 	private JCheckBox outputToDebugBuffer;
 	private JCheckBox useFileDir;
@@ -74,6 +75,10 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		shellPrompt = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT), 10);
 		shellPrompt.setToolTipText("Prompt string displayed by interactive shell buffers.");
 		addComponent("Interactive Shell Prompt", shellPrompt);
+		
+		cssFile = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE), 30);
+		cssFile.setToolTipText("Path of CSS file to apply to the PolyML state panel.  Panel reset required.");
+		addComponent("State Panel Style file", cssFile);
 	}
 
 	/**
@@ -86,6 +91,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		jEdit.setProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND, polyideCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_COMMAND, shellCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_PROMPT, shellPrompt.getText());
+		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE, cssFile.getText());
 		
 		if(!PolyMLPlugin.restartPolyML()) {
 			JOptionPane.showMessageDialog(null, "PolyML restart failed.", 

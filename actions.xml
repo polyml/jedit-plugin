@@ -91,6 +91,13 @@
 		</CODE>
 	</ACTION>
 
+	<ACTION NAME="polyml-menu.mitem-show-state">
+		<CODE>
+			wm.addDockableWindow("polyml-state");
+			wm.getDockableWindow("polyml-state").focus();
+		</CODE>
+	</ACTION>
+
 	<!--
 		***************************************************************
 		<ACTION NAME="polyml-menu.mitem-test"> <CODE>

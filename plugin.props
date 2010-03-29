@@ -26,11 +26,11 @@ plugin.polyml.PolyMLPlugin.activate = defer
 # This name is used for the menu associated with this plugin, also used by 
 # jEdit to work out the main class associated with this plugin 
 # (jedit appends "Plugin" to this to get the main class)
-plugin.polyml.PolyMLPlugin.name=PolyML-Plugin
+plugin.polyml.PolyMLPlugin.name=PolyML
 
 # Other stuff for jEdit
 plugin.polyml.PolyMLPlugin.author = Lucas Dixon
-plugin.polyml.PolyMLPlugin.version = 00.01.00.00
+plugin.polyml.PolyMLPlugin.version = 00.01.01.00
 plugin.polyml.PolyMLPlugin.description = A Plugin for PolyML
 plugin.polyml.PolyMLPlugin.depend.0 = jedit 04.03.00.00
 plugin.polyml.PolyMLPlugin.depend.1 = jdk 1.5
@@ -66,6 +66,8 @@ plugin.polyml.PolyMLPlugin.menu=\
   polyml-menu.mitem-prev_command \
   polyml-menu.mitem-next_command \
   - \
+  polyml-menu.mitem-show-state \
+  - \
   polyml-menu.mitem-rebuild_ide_heap
   
 #  - \
@@ -73,6 +75,8 @@ plugin.polyml.PolyMLPlugin.menu=\
 #  polyml-menu.mitem-send_cur_command \
 
 # labels for the menu items
+polyml-menu.mitem-show-state.label=Show PolyML State
+
 polyml-menu.mitem-process_buffer.label=Process Buffer in ML
 polyml-menu.mitem-cancel.label=Send Cancel to ML
 polyml-menu.mitem-restart_polyml.label=Restart PolyML
@@ -108,7 +112,7 @@ polyml-menu.mitem-test.label=test action
 ### plugin options pane
 plugin.polyml.PolyMLPlugin.option-pane=polyml-options
 options.polyml-options.code=new polyml.PolyMLPluginOptionsPane();
-options.polyml-options.label=PolyML Plugin Options
+options.polyml-options.label=PolyML
 # Setting not defined but supplied for completeness
 options.polyml-options.filepath=
 
@@ -130,3 +134,9 @@ options.polyml.copy_output_to_debug_buffer=true
 
 # must be same as: PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR
 options.polyml.run_from_file_dir=true
+
+# must be same as: PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE
+options.polyml.state_output_css_file=
+
+## details of the dockable
+polyml-state.title=PolyML State (experimental)
