@@ -34,7 +34,7 @@ import errorlist.ErrorSource;
  */
 public class PolyMLPlugin extends EBPlugin {
 
-	public static final String NAME = "PolyML-Plugin";
+	public static final String NAME = "PolyML";
 	public static final String OPTION_PREFIX = "options.polyml.";
 
 	public static final String PROPS_POLY_IDE_COMMAND = "options.polyml.polyide_command";
@@ -76,6 +76,11 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
+	/**
+	 * Gets the text area associated with this buffer.
+	 * @param b the buffer to find.
+	 * @return associated textarea.
+	 */
 	public static TextArea getTextAreaOfMLBuffer(Buffer b) {
 		for (View v : jEdit.getViews()) {
 			if (v.getBuffer() == b) {
@@ -85,11 +90,14 @@ public class PolyMLPlugin extends EBPlugin {
 		return null;
 	}
 
+	/**
+	 * Append a message to the debug buffer, creating said buffer if required.
+	 */
 	public static void debugMessage(String s) {
 		if (Boolean.parseBoolean(jEdit
 				.getProperty(PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER))) {
 			if (debugBuffer == null) {
-				// creates a new buffer in the view
+				// creates a new buffer in the view (why not newDebugShellBuffer()..?)
 				debugBuffer = new BufferEditor(newDebugBufferFile(null, null));
 				// debugBuffer.getBuffer().setNewFile(false);
 			}
@@ -97,8 +105,13 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
+	/**
+	 * Gets the command required to launch Poly-IDE.
+	 * List length always == 1 at present.
+	 * @return the command as a list of strings.
+	 */
 	public static List<String> getPolyIDECmd() {
-		String s = jEdit.getProperty(PROPS_POLY_IDE_COMMAND);
+		String s = PolyMLPlugin.getPolyIDECmdString();
 		List<String> cmd = new LinkedList<String>();
 		// for (String s2 : s.split(" ")) {
 		// cmd.add(s2);
@@ -107,18 +120,28 @@ public class PolyMLPlugin extends EBPlugin {
 		return cmd;
 	}
 
+	/**
+	 * Gets the command required to launch Poly-IDE.
+	 * @return the command as a string.
+	 */	
 	public static String getPolyIDECmdString() {
 		return jEdit.getProperty(PROPS_POLY_IDE_COMMAND);
 	}
 
-	// called when plugin is loaded/added
+	/** 
+	 * called when plugin is loaded/added
+	 * @see EBPlugin#start()
+	 */
 	public void start() {
 		// System.err.println("PolyMLPlugin: start called.");
 		errorSource = new DefaultErrorSource(NAME);
 		DefaultErrorSource.registerErrorSource(errorSource);
 	}
 
-	// called when plugin is un-loaded/removed
+	/**
+	 * called when plugin is un-loaded/removed
+	 * @see EBPlugin#stop()
+	 */
 	public void stop() {
 		stopAllShellBuffers();
 		DefaultErrorSource.unregisterErrorSource(errorSource);
@@ -127,6 +150,10 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
+	/**
+	 * Makes attempts to start or restart PolyML.
+	 * @return true of the process is running (or has been restarted)
+	 */
 	static public boolean tryEnsurePolyMLStarted() {
 		if (polyMLProcess == null) {
 			return restartPolyML();
@@ -143,6 +170,10 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
+	/**
+	 * Restarts PolyML
+	 * @return false if an error has occurred during restart.
+	 */
 	static public boolean restartPolyML() {
 		// System.err.println("restarting polyml...");
 		try {
@@ -176,6 +207,18 @@ public class PolyMLPlugin extends EBPlugin {
 		return result;
 	}
 	
+	/**
+	 * Pops up a warning that PolML could not be (re)started, and
+	 * offers some advice.
+	 */
+	public static void showMLFailed() {
+		JOptionPane.showMessageDialog(
+				null,
+				"Failed to (re)start PolyML from command: "
+						+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
+						+ "\nChange the command in the Plugin Options menu",
+				"PolyML not running", JOptionPane.WARNING_MESSAGE);
+	}
 	
 	/**
 	 * If in a shell buffer, process rest of the input; else we treat the buffer
@@ -209,15 +252,7 @@ public class PolyMLPlugin extends EBPlugin {
 					
 					System.err.println("compiled buffer: " + b.getPath());
 				} else {
-					JOptionPane
-							.showMessageDialog(
-									null,
-									"Failed to (re)start PolyML from command: "
-											+ jEdit
-													.getProperty(PROPS_POLY_IDE_COMMAND)
-											+ "\nChange the command in the Plugin Options menu",
-									"PolyML not running",
-									JOptionPane.WARNING_MESSAGE);
+					showMLFailed();
 				}
 			} else {
 				s.sendBufferTextToEOF();
@@ -230,39 +265,23 @@ public class PolyMLPlugin extends EBPlugin {
 
 	/**
 	 * Cancel a compilation
-	 * 
-	 * @param b
 	 */
 	static public void sendCancelToPolyML() {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendCancelLastCompile();
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
 	/**
 	 * get possible operations
-	 * 
-	 * @param b
 	 */
 	static public void sendGetProperies(EditPane e) {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendGetProperies(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
@@ -270,32 +289,18 @@ public class PolyMLPlugin extends EBPlugin {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendGetType(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
 	/**
 	 * Location requests
-	 * 
-	 * @param b
 	 */
 	static public void sendLocationDeclared(EditPane e) {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendLocationDeclared(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
@@ -303,13 +308,7 @@ public class PolyMLPlugin extends EBPlugin {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendLocationOpened(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
@@ -317,32 +316,18 @@ public class PolyMLPlugin extends EBPlugin {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendLocationOfParentStructure(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
 	/**
 	 * Moving around parse tree
-	 * 
-	 * @param b
 	 */
 	static public void sendMoveToParent(EditPane e) {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendMoveToParent(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
@@ -350,13 +335,7 @@ public class PolyMLPlugin extends EBPlugin {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendMoveToFirstChild(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
@@ -364,13 +343,7 @@ public class PolyMLPlugin extends EBPlugin {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendMoveToNext(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
 	}
 
@@ -378,25 +351,8 @@ public class PolyMLPlugin extends EBPlugin {
 		if (tryEnsurePolyMLStarted()) {
 			polyMLProcess.sendMoveToPrevious(e);
 		} else {
-			JOptionPane
-					.showMessageDialog(
-							null,
-							"Failed to (re)start PolyML from command: "
-									+ jEdit.getProperty(PROPS_POLY_IDE_COMMAND)
-									+ "\nChange the command in the Plugin Options menu",
-							"PolyML not running", JOptionPane.WARNING_MESSAGE);
+			showMLFailed();
 		}
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	static public BufferEditor newDebugShellBuffer() {
-		synchronized (jEditGUILock) {
-			debugBuffer = new BufferEditor(newDebugBufferFile(null, null));
-		}
-		return debugBuffer;
 	}
 
 	static public ShellBuffer newShellBuffer() {
@@ -565,14 +521,14 @@ public class PolyMLPlugin extends EBPlugin {
 			}
 		}
 	}
-
+	
 	static Buffer newMLTxtBufferFile(View view, String dir, String name,
 			Integer count) {
 		count++;
 		return jEdit.openFile(view, dir, name + "-" + count + ".ml.txt", true,
 				null);
 	}
-
+	
 	static Buffer newShellBufferFile(View view, String dir) {
 		return newMLTxtBufferFile(view, dir, "ShellBuffer",
 				shellBufferNameCount);
@@ -581,6 +537,17 @@ public class PolyMLPlugin extends EBPlugin {
 	static Buffer newDebugBufferFile(View view, String dir) {
 		return newMLTxtBufferFile(view, dir, "DebugBuffer",
 				debugBufferNameCount);
+	}
+
+	/**
+	 * Gets or creates the a new Debug Shell buffer.
+	 * @return
+	 */
+	static public BufferEditor newDebugShellBuffer() {
+		synchronized (jEditGUILock) {
+			debugBuffer = new BufferEditor(newDebugBufferFile(null, null));
+		}
+		return debugBuffer;
 	}
 
 	/* start and restart are the same: they restart shell in the current buffer */
