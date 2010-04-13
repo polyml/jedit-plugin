@@ -25,6 +25,10 @@ import pushstream.TimelyCharToStringStream;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 
+
+/*
+ * Responsible for communication with the PolyML process
+ */
 public class PolyMLProcess {
 	static final char ESC_CHAR = 0x1b;
 	static final char EOT = 0x04;

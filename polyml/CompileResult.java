@@ -32,6 +32,11 @@ public class CompileResult {
 		return status == STATUS_BUG;
 	}
 	
+	/*
+	 * Parse the PolyMarkup to pull out the information for the concerning 
+	 * the result of a compilation request. This is a constructor for 
+	 * CompileResult 
+	 */
 	public CompileResult(PolyMarkup m) {
 		errors = new LinkedList<PolyMLError>();
 		

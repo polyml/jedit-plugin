@@ -47,7 +47,7 @@ public class PolyMarkup implements PushStream<Character> {
 	int status;
 
 	// data for lazy markup
-	Character kind; // when Markup a field this is null
+	Character kind; // when content, kind is null, else it's containing kind. 
 	List<PolyMarkup> fields; // when Markup is only content, this is null
 	String content; // when Markup is only fields, this is null
 	LinkedList<PolyMarkup> parents; // 
@@ -246,13 +246,19 @@ public class PolyMarkup implements PushStream<Character> {
 			System.err.println("addChar: called with undefined status: " + status);	
 		}
 	}
-	
 
+	/* 
+	 * flatten all recursive fields to XML markup. 
+	 * */
 	public void recFlattenAllFieldsToContent() {
 		if(content == null) { content = new String(); }
 		if(fields != null) {
+			String tag = null;
 			Iterator<PolyMarkup> i = fields.iterator();
-			content += "[";
+			if(kind != null) {
+				tag = "<POLYML_" + kind + ">";
+				content += tag;
+			}
 			while(i.hasNext()) {
 				PolyMarkup m2 = i.next();
 				m2.recFlattenAllFieldsToContent();
@@ -261,7 +267,9 @@ public class PolyMarkup implements PushStream<Character> {
 					content += ",";
 				}
 			}
-			content += "]";
+			if(tag != null){
+				content += "</a>";
+			}
 			fields = null;
 		}
 	}
@@ -276,7 +284,11 @@ public class PolyMarkup implements PushStream<Character> {
 		}
 	}
 	
-	
+	/*
+	 * This will flatten the content, recursively of all sub-fields of kind "k"
+	 * For example, you can use this to flatten the PolyML location tags which 
+	 * in ESC D ... ESC d tags. (kind = D)
+	 */
 	public void recFlattenUnderTagToContent(char k) {
 		if(kind != null && kind == k) {
 			recFlattenAllFieldsToContent();
@@ -343,24 +355,26 @@ public class PolyMarkup implements PushStream<Character> {
 	 */
 	public String toXMLString() {
 		String body = new String();
-		boolean hasPrev = false;
-		if(content != null) { body += content; hasPrev = true; }
+		//boolean hasPrev = false;
+		if(content != null) { 
+			body += content; //hasPrev = true; 
+		}
 		if(fields != null) { 
 			Iterator<PolyMarkup> i = fields.iterator();
 			while(i.hasNext()) {
-				if(hasPrev){ body += ("<,/>\n");} 
-				body += i.next().toPrettyString();
-				hasPrev = true;
+				//if(hasPrev){ body += ("<,/>\n");} 
+				body += i.next().toXMLString();
+				//hasPrev = true;
 			}
 		}
 		
-		String kindString;
 		if(kind != null){
-			kindString = "" + Character.toUpperCase(kind);
+			String kindString = "" + Character.toUpperCase(kind);
+			return ("<POLYML_" + kindString + ">" + body + "</POLYML_" + kindString + ">\n");
 		} else {
-			kindString = "_";
+			return body;
 		}
-		return ("<" + kindString + ">" + body + "</" + kindString + ">\n");
+		//return ("<POLYML_" + kindString + ">" + body + "</POLYML_" + kindString + ">\n");
 	}
 	
 	/**
@@ -370,7 +384,8 @@ public class PolyMarkup implements PushStream<Character> {
 	 * @see StateViewDockable#uriof(errorlist.ErrorSource.Error)
 	 */
 	public String toHTMLString() {
-		throw new UnsupportedOperationException("Not yet implemented.");
+		return toXMLString();
+		//throw new UnsupportedOperationException("Not yet implemented.");
 	}
 	
 	/**

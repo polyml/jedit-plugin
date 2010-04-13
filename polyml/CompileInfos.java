@@ -4,6 +4,10 @@ import java.util.Hashtable;
 import java.util.Map;
 import org.gjt.sp.jedit.Buffer;
 
+
+/*
+ * Information about a compilation requests.
+ */
 public class CompileInfos {
 	
 	/**
@@ -24,7 +28,7 @@ public class CompileInfos {
 	}
 	
 	/**
-	 * called when a buffer is sent ot be parsed
+	 * called when a buffer is sent to be parsed
 	 * @param b
 	 * @param e
 	 * @param rid
