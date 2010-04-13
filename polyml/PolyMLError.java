@@ -15,7 +15,7 @@ public class PolyMLError {
 	public String fileName;
 	public String randomValue;
 	
-	public PolyMLError(char k, int s, int e, String m){
+	private PolyMLError(char k, int s, int e, String m){
 		kind = k;
 		startPos = s;
 		endPos = e;
@@ -24,6 +24,31 @@ public class PolyMLError {
 		randomValue = null;
 	}
 	
+	/**
+	 * Static constructor for exception messages
+	 * @param startOffset
+	 * @param finalOffset
+	 * @param exception_message
+	 * @return
+	 */
+	static public PolyMLError newExceptionError(int startOffset, int finalOffset, String exception_message) {
+		return new PolyMLError(KIND_EXCEPTION, startOffset, finalOffset, exception_message);
+	}
+	
+	/**
+	 * Static constructor for prelude messages
+	 * @param exception_message
+	 * @return
+	 */
+	static public PolyMLError newPreludeError(String exception_message) {
+		return new PolyMLError(KIND_PRELUDE_FAILURE, 0, 0, exception_message);
+	}
+	
+	/**
+	 * Generic constructor for ML Markup messages
+	 * @param m
+	 * @throws MarkupException
+	 */
 	public PolyMLError(PolyMarkup m) throws MarkupException{
 		Iterator<PolyMarkup> i = m.getSubs().iterator();
 		String s = i.next().getContent();
@@ -41,7 +66,11 @@ public class PolyMLError {
 			endPos = Integer.parseInt(i.next().getContent());
 			
 			PolyMarkup m2 = i.next();
-			m2.recFlattenDefaultFieldsToContent();
+			
+			System.err.println("MARKUP DEBUG!: " + m2.toXMLString() );
+			
+			m2.recChangeLocationFieldsToHTML(); // to make nicer output for ref locations
+			m2.recFlattenDefaultFieldsToContent(); // anything else gets XML tags. 
 			message = m2.getContent();
 			
 			if(message == null) {

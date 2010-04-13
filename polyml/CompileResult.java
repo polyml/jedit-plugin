@@ -66,6 +66,9 @@ public class CompileResult {
 					throw new MarkupException("CompileResult:bad status", m);
 				}
 				
+				// FIXME: move parsing of prelude and exception errors 
+				// into PolyMLError code for handling markup!
+				
 				// get offset to parsed point
 				s = i.next().getContent();
 				// convert ML minus to standard minus, so that integer can be parsed. 
@@ -76,27 +79,30 @@ public class CompileResult {
 				PolyMarkup finalMarkup = i.next();
 				
 				if (status == STATUS_PRELUDE_FAILED) {
+					finalMarkup.recChangeLocationFieldsToHTML();
 					finalMarkup.recFlattenDefaultFieldsToContent();
 					String error_reason = finalMarkup.getContent();
-					errors.add(new PolyMLError(PolyMLError.KIND_PRELUDE_FAILURE, 0, 0, error_reason));
+					errors.add(PolyMLError.newPreludeError(error_reason));
 				} else if(finalMarkup.getSubs() != null){
 					
 					Iterator<PolyMarkup> i2;
 					i2 = finalMarkup.getSubs().iterator();
 					
 					if (status == STATUS_EXCEPTION_RAISED) {
-						// into first "X" subtag
+						// move to the first (and only) "X" subtag
 						PolyMarkup m2 = i2.next();
-						m2.recFlattenAllFieldsToContent();
+						
+						m2.recChangeLocationFieldsToHTML();
+						m2.recFlattenAllSubFieldsToContent();
 						String exception_message = m2.getContent();
 						
 						if(exception_message == null) {
-							System.err.println("null exception message; m: " + m.toPrettyString() 
-									+ "\n m2:" + m2.toPrettyString());
+							System.err.println("null exception message; m: " + m.toXMLString() 
+									+ "\n m2:" + m2.toXMLString());
 						} else {
-							errors.add(new PolyMLError(PolyMLError.KIND_EXCEPTION, finalOffset, finalOffset, exception_message));
+							errors.add(PolyMLError.newExceptionError(finalOffset, finalOffset, "Exception raised: " + exception_message));
 						}
-					} 
+					}
 					
 					// create error list, all other status kinds may have lists of errors
 					while (i2.hasNext()) {
@@ -106,7 +112,7 @@ public class CompileResult {
 								errors.add(new PolyMLError(m2));
 							} catch(java.lang.NumberFormatException e) {
 								System.err.print("Cannot create error, bad markup: \n" 
-										+ m2.toPrettyString());
+										+ m2.toXMLString());
 							}
 
 						} else {

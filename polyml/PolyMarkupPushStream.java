@@ -84,7 +84,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	}
 	
 	/**
-	 * 
+	 * handle location result by adding it to errorList
 	 * @param l
 	 */
 	void noteLocation(FullLocationResponse l) {
@@ -135,11 +135,18 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			}
 		}
 	}
+	
+	
+	/**
+	 * Given some markup, what to we do with it...
+	 */
 	public synchronized void add(PolyMarkup m) {
-		System.err.println("PolyMarkupPushStream.add: " + m.toPrettyString());
+		System.err.println("PolyMarkupPushStream.add: " + m.toXMLString());
 		
 		//PolyMLPlugin.debugMessage("\n\n"); 
 		//PolyMLPlugin.debugMessage(m.toPrettyString()); 
+		PolyMLPlugin.debugMessage("\n\n"); 
+		PolyMLPlugin.debugMessage(m.toXMLString());
 		PolyMLPlugin.debugMessage("\n\n"); 
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
 		if(m.kind == PolyMarkup.KIND_HELLO) {
@@ -148,6 +155,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				helloLock.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
 		} else if(m.kind == PolyMarkup.KIND_COMPILE) {
+			// Parse the markup into a compile result
 			CompileResult r = new CompileResult(m);
 			
 			CompileRequest cr = compileInfos.compileCompleted(r);
@@ -157,10 +165,11 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 				cr.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
 			
-			System.err.println("PolyMarkupPushStream.add: about to enter GUI lock");
+			// now do the GUI stuff to display the errors...
+			//System.err.println("PolyMarkupPushStream.add: about to enter GUI lock");
 			synchronized (PolyMLPlugin.jEditGUILock) {
 				String fileName = cr.fileName;
-				System.err.println("PolyMarkupPushStream.add: in GUI lock");
+				//System.err.println("PolyMarkupPushStream.add: in GUI lock");
 
 				Buffer buffer = jEdit.getBuffer(cr.fileName);
 				
@@ -196,6 +205,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 							errorSource, ErrorSource.ERROR, fileName, 0,
 							0, 0, "BUG: Failed to check, or have null buffer."));
 				} else {
+					// General Status: success/not success
 					if(r.isSuccess()){
 						errorSource.addError(new DefaultErrorSource.DefaultError(
 								errorSource, ErrorSource.WARNING, fileName, 0,

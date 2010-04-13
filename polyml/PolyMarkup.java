@@ -10,11 +10,18 @@ import pushstream.PushStream;
 /**
  * Represents PolyML IDE Markup elements.
  * @see http://www.polyml.org/docs/IDEProtocol.html for details.
+ * 
+ * The idea is that this is a polymorphic tagged n-ary tree.
+ * Each node has a kind, which may be null. null nodes have content, all 
+ * other kinds of node have only sub-nodes. 
+ * 
  */
 public class PolyMarkup implements PushStream<Character> {
+	/* special characters used when parsing */
 	public final static int ESC = 0x1b;
 	public final static int EOT = -1; // end of transmission
 	
+	/* internal status values - need to be unique, but value is not itself important */
 	// exclusive possible values of status
 	public final static int STATUS_OUTSIDE = 1;
 	public final static int STATUS_OUTSIDE_ESC = 2;
@@ -29,18 +36,19 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	public final static int STATUS_COMPLETE = 10;
 	
-	public final static char OUTKIND_CANCEL = 'K';
+	public final static char OUTKIND_CANCEL = 'K'; /* for cancel result */
 	
-	public final static char KIND_DEFAULT_FIELD = ';';
+	public final static char KIND_DEFAULT_FIELD = ';'; /* marks end of start tag, begging of content */
 
-	public final static char KIND_COMPILE = 'R';
-	public final static char KIND_PROPERTIES = 'O';
-	public final static char KIND_TYPE_INFO = 'T';
+	public final static char KIND_COMPILE = 'R'; /* for result of compilation */
+	public final static char KIND_PROPERTIES = 'O'; /* for properties of current point in parse tree */
+	public final static char KIND_TYPE_INFO = 'T'; /* for type information */
+	public final static char KIND_DESCRIPTION_TAG = 'D'; /* for inline location info */
+
+	public final static char KIND_LOC = 'I'; /* for defined location, e.g. of identifier */
 	
-	public final static char KIND_LOC = 'I';
-	
-	public final static char KIND_MOVE = 'M';
-	public static final char KIND_HELLO = 'H';
+	public final static char KIND_MOVE = 'M'; /* for moving up or down term tree. */
+	public static final char KIND_HELLO = 'H';/* for making/testing contact with PolyML */
 	
 	
 	/** status of lazy markup */
@@ -248,6 +256,39 @@ public class PolyMarkup implements PushStream<Character> {
 	}
 
 	/* 
+	 * recursively changes location fields into HTML content
+	 * */
+	public void recChangeLocationFieldsToHTML() {
+		if(fields != null) {
+			Iterator<PolyMarkup> i = fields.iterator();
+			if(kind == KIND_DESCRIPTION_TAG) { 
+				// get local location details. 
+				String filename = (i.next()).getContent();
+				String startline = (i.next()).getContent();
+				String startloc = (i.next()).getContent();
+				String endloc = (i.next()).getContent();
+				// the main sub-stuff
+				PolyMarkup substuff = i.next();
+				substuff.recChangeLocationFieldsToHTML();
+				
+				fields = new LinkedList<PolyMarkup>();
+				
+				fields.add(new PolyMarkup(null,"<a href='pmjp://" + filename + "?line=" + startline + 
+						"&start=" + startloc + "&end=" + endloc + "'>"));
+				fields.add(substuff);
+				fields.add(new PolyMarkup(null,"</a>"));
+			} else {
+				while(i.hasNext()) {
+					PolyMarkup m2 = i.next();
+					m2.recChangeLocationFieldsToHTML();
+				}
+			}
+		}
+	}
+	
+	
+	
+	/* 
 	 * flatten all recursive fields to XML markup. 
 	 * */
 	public void recFlattenAllFieldsToContent() {
@@ -255,28 +296,48 @@ public class PolyMarkup implements PushStream<Character> {
 		if(fields != null) {
 			String tag = null;
 			Iterator<PolyMarkup> i = fields.iterator();
-			if(kind != null) {
-				tag = "<POLYML_" + kind + ">";
-				content += tag;
+			if(kind != null && kind != KIND_DESCRIPTION_TAG) {
+				tag = "POLYML_" + kind + "";
+				content += "<" + tag + ">";
 			}
 			while(i.hasNext()) {
 				PolyMarkup m2 = i.next();
 				m2.recFlattenAllFieldsToContent();
 				content += m2.getContent();
-				if(i.hasNext()) {
-					content += ",";
+				if(i.hasNext() && kind != KIND_DESCRIPTION_TAG) {
+					content += "<POLYML_NEXT/>";
 				}
 			}
 			if(tag != null){
-				content += "</a>";
+				content +=  "</" + tag + ">";
 			}
 			fields = null;
 		}
 	}
 	
+	/** 
+	 * don't worry about this fields kind, recursively flatten everything else 
+	 * */
+	public void recFlattenAllSubFieldsToContent() {
+		if(content == null) { content = new String(); }
+		if(fields != null) {
+			Iterator<PolyMarkup> i = fields.iterator();
+			while(i.hasNext()) {
+				PolyMarkup m2 = i.next();
+				m2.recFlattenAllFieldsToContent();
+				content += m2.getContent();
+			}
+			fields = null;
+		}
+	}
+	
+	/*
+	 * Flattens everything within a default field - typically this was the 
+	 * stuff after a ";" before the end markup. 
+	 */
 	public void recFlattenDefaultFieldsToContent() {
 		if(kind != null && kind == KIND_DEFAULT_FIELD) {
-			recFlattenAllFieldsToContent();
+			recFlattenAllFieldsToContent(); // to result in pure content.
 		} else if(fields != null) {
 			for(PolyMarkup m2 : fields) {
 				m2.recFlattenDefaultFieldsToContent();
@@ -301,6 +362,9 @@ public class PolyMarkup implements PushStream<Character> {
 	
 	// NOTE: interesting case for generic inefficiency in imperative languages: 
 	// end up with hasPrev set each time in the loop - but only needed once. 
+	/**
+	 * recreate the input from PolyML that would produce this markup
+	 */
 	public String toString() {
 		String body = new String();
 		boolean hasPrev = false;
@@ -320,8 +384,8 @@ public class PolyMarkup implements PushStream<Character> {
 	}
 	
 	/**
-	 * Produces a string format of this Markup object, formatted for human reading.
-	 * Recurses to include children.
+	 * Produces a string of this Markup object, as it would have 
+	 * come from PolyML (for debugging, easier to read than toString)
 	 */
 	public String toPrettyString() {
 		String body = new String();
@@ -350,30 +414,35 @@ public class PolyMarkup implements PushStream<Character> {
 	}
 	
 	/**
-	 * Produces a string format of this Markup object, formatted for machine reading.
-	 * Recurses to include children.
+	 * Produces a XML string format of this Markup object, reflecting the 
+	 * internal data structure. (mostly for debugging)
 	 */
 	public String toXMLString() {
 		String body = new String();
 		//boolean hasPrev = false;
-		if(content != null) { 
-			body += content; //hasPrev = true; 
+		
+		if(content != null) {
+			body += "<c>" + content + "</c>"; //hasPrev = true; 
 		}
 		if(fields != null) { 
+			body += "\n<f>";
 			Iterator<PolyMarkup> i = fields.iterator();
 			while(i.hasNext()) {
-				//if(hasPrev){ body += ("<,/>\n");} 
+				// if(hasPrev){ body += ("<POLYML_NEXT/>\n");} 
 				body += i.next().toXMLString();
 				//hasPrev = true;
 			}
+			body += "\n</f>";
 		}
 		
 		if(kind != null){
 			String kindString = "" + Character.toUpperCase(kind);
-			return ("<POLYML_" + kindString + ">" + body + "</POLYML_" + kindString + ">\n");
+			body = "\n<m k=" + kindString + ">" + body + "\n</m>";
 		} else {
-			return body;
+			body = "\n<m>" + body + "</m>";
 		}
+		
+		return body;
 		//return ("<POLYML_" + kindString + ">" + body + "</POLYML_" + kindString + ">\n");
 	}
 	
