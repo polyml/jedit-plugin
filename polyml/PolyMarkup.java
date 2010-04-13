@@ -277,6 +277,8 @@ public class PolyMarkup implements PushStream<Character> {
 						"&start=" + startloc + "&end=" + endloc + "'>"));
 				fields.add(substuff);
 				fields.add(new PolyMarkup(null,"</a>"));
+				
+				kind = KIND_DEFAULT_FIELD;
 			} else {
 				while(i.hasNext()) {
 					PolyMarkup m2 = i.next();
@@ -296,7 +298,7 @@ public class PolyMarkup implements PushStream<Character> {
 		if(fields != null) {
 			String tag = null;
 			Iterator<PolyMarkup> i = fields.iterator();
-			if(kind != null && kind != KIND_DESCRIPTION_TAG) {
+			if(kind != null && kind != KIND_DEFAULT_FIELD) {
 				tag = "POLYML_" + kind + "";
 				content += "<" + tag + ">";
 			}
@@ -304,7 +306,7 @@ public class PolyMarkup implements PushStream<Character> {
 				PolyMarkup m2 = i.next();
 				m2.recFlattenAllFieldsToContent();
 				content += m2.getContent();
-				if(i.hasNext() && kind != KIND_DESCRIPTION_TAG) {
+				if(i.hasNext() && kind != KIND_DEFAULT_FIELD) {
 					content += "<POLYML_NEXT/>";
 				}
 			}
