@@ -44,6 +44,7 @@ public class PolyMLPlugin extends EBPlugin {
 	public static final String PROPS_COPY_OUTPUT_TO_DEBUG_BUFFER = "options.polyml.copy_output_to_debug_buffer";
 	public static final String PROPS_RUN_FROM_FROM_FILE_DIR = "options.polyml.run_from_file_dir";
 	public static final String PROPS_STATE_OUTPUT_CSS_FILE = "options.polyml.state_output_css_file";
+	public static final String PROPS_STATE_DOC_EDITABLE = "options.polyml.state_doc_editable";
 
 	/** Associates Buffers to Processes that output to the buffer */
 	static Map<Buffer, ShellBuffer> shells;
