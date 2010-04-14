@@ -138,5 +138,8 @@ options.polyml.run_from_file_dir=true
 # must be same as: PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE
 options.polyml.state_output_css_file=
 
+# must be same as : PolyMLPlugin.PROPS_STATE_DOCUMENT_EDITABLE
+options.polyml.state_doc_editable=false
+
 ## details of the dockable
-polyml-state.title=PolyML State (experimental)
+polyml-state.title=PolyML State

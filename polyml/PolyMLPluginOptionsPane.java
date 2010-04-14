@@ -42,6 +42,8 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	/** */
 	private JCheckBox outputToDebugBuffer;
 	private JCheckBox useFileDir;
+
+	private JCheckBox editableDocument;
 	
 	/**
 	 * Default constructor. Note that the name is important!
@@ -63,6 +65,11 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_RUN_FROM_FROM_FILE_DIR)));
 		useFileDir.setToolTipText("If unchecked, starts polyML from a file's project directory.");
 		addComponent(useFileDir);
+		
+		editableDocument = new JCheckBox("State View Document editable?",
+				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_STATE_DOC_EDITABLE)));
+		editableDocument.setToolTipText("Allow the document which displays prover state to be edited (for debugging)");
+		addComponent(editableDocument);
 		
 		polyideCommand = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 25);
 		polyideCommand.setToolTipText("Command to start PolyML for processing edited files.");
@@ -92,6 +99,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_COMMAND, shellCommand.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_PROMPT, shellPrompt.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE, cssFile.getText());
+		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_DOC_EDITABLE, String.valueOf(editableDocument.isSelected()));
 		
 		if(!PolyMLPlugin.restartPolyML()) {
 			JOptionPane.showMessageDialog(null, "PolyML restart failed.", 
