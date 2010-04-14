@@ -2,6 +2,9 @@ package polyml;
 
 import java.util.Iterator;
 
+/**
+ * A PolyML error.
+ */
 public class PolyMLError {
 	static char KIND_EXCEPTION = 'X';
 	static char KIND_PRELUDE_FAILURE = 'L';
@@ -15,11 +18,11 @@ public class PolyMLError {
 	public String fileName;
 	public String randomValue;
 	
-	private PolyMLError(char k, int s, int e, String m){
-		kind = k;
-		startPos = s;
-		endPos = e;
-		message = m;
+	private PolyMLError(char kind, int startPos, int endPos, String msg){
+		this.kind = kind;
+		this.startPos = startPos;
+		this.endPos = endPos;
+		this.message = msg;
 		fileName = null;
 		randomValue = null;
 	}

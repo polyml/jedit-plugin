@@ -59,8 +59,8 @@ public class StateViewDocument {
 				break;
 			}
 		}
-		if (el == null) System.err.println("Couldn't find root element!");		
-		
+		if (el == null) System.err.println("Couldn't find root element!");
+				
 		// now drill down to add our custom root element
 		el = (BlockElement) getFirstChild(el, "body");
 		try {
