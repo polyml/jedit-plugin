@@ -40,6 +40,13 @@ public class StateViewDocument {
 		"."+CompileResult.STATUS_CANCEL+", " +
 		"."+CompileResult.STATUS_BUG+" \n{"+
 		"	color: magenta;\n" +
+		"}\n"+
+		".gray {"+
+		"   color: gray;\n"+
+		"}\n"+
+		".info {"+
+		"   color: darkblue;\n"+
+		"   border-bottom: 2px solid black;\n"+
 		"}\n";
 
 	/**
