@@ -1,5 +1,6 @@
 package polyml;
 
+import java.awt.Cursor;
 import java.net.MalformedURLException;
 
 import java.net.URL;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
+import javax.swing.event.HyperlinkEvent.EventType;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
@@ -22,7 +24,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 
 	/** The recognised protocol string. */
 	public static final String ERROR_PROTOCOL = "pmjp";
-	/** All possible query arguments for en error URL */
+	/** All possible query arguments for an error URL */
 	private static final HashMap<String,String> args = new HashMap<String, String>(){{
 		put("line", null);
 		put("start", null);
@@ -30,7 +32,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	}};
 	
 	private View view;
-	
+		
 	/**
 	 * A new link opener. 
 	 * @param view the JEdit view in which to perform buffer operations.
@@ -44,15 +46,12 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	 */
 	@Override
 	public void hyperlinkUpdate(HyperlinkEvent e) {
-        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-            /*JEditorPane pane = (JEditorPane) e.getSource();
-            if (e instanceof HTMLFrameHyperlinkEvent) {
-                HTMLFrameHyperlinkEvent  evt = (HTMLFrameHyperlinkEvent)e;
-                HTMLDocument doc = (HTMLDocument)pane.getDocument();
-                doc.processHTMLFrameHyperlinkEvent(evt);
-            } else {*/
+        if (e.getEventType() == EventType.ACTIVATED) {
+        	//System.err.println("*** event"+e+": ("+e.getDescription()+") type '"+e.getEventType()+"'");
+        	//System.err.println("*** URL "+g.getURL());
             try {
-            	openBufferForURL(e.getURL());
+            	openBufferForURL(e.getDescription());
+            	// openBufferForURL(e.getDescription()); // TODO: make this work
                 //pane.setPage(e.getURL());
             } catch (Throwable t) {
                 t.printStackTrace();
@@ -62,12 +61,17 @@ public class ErrorLinkOpener implements HyperlinkListener {
 
 	/**
 	 * Opens a buffer at the required location, as represented by a pmjp URI.
+	 * HACK: Needed since URL can't parse 'pjmp' at the moment.
 	 */
-	private void openBufferForURI(String errorURI) {
+	private void openBufferForURL(String theURL) {
 		try {
-			openBufferForURL(new URL(errorURI));
+			System.err.println("Attempting to replace "+theURL);
+			if (theURL.substring(0, ERROR_PROTOCOL.length()).equals(ERROR_PROTOCOL)) {
+				theURL = theURL.replaceFirst("^"+ERROR_PROTOCOL, "http");
+				openBufferForURL(new URL(theURL), false);				
+			}
 		} catch (MalformedURLException e) {
-			PolyMLPlugin.debugMessage("Could not create URL for "+errorURI+".");
+			PolyMLPlugin.debugMessage("Could not create URL for "+theURL+".");
 		}
 		
 		// some rudimentary string hacking to get the required bits out of our URI.
@@ -81,8 +85,17 @@ public class ErrorLinkOpener implements HyperlinkListener {
 		*/		
 	}
 	
-	private void openBufferForURL(URL theUrl) {
-		if (!theUrl.getProtocol().equals(ERROR_PROTOCOL)) {
+	/**
+	 * Opens a buffer for the given URL.
+	 * HACK: Needed since URL can't parse 'pjmp' at the moment.
+	 * @param theUrl the URL to open in an editor pane.
+	 * @param checkProtocol false to ignore if the protocol doesn't match.
+	 */
+		private void openBufferForURL(URL theUrl, boolean checkProtocol) {
+		if (theUrl == null) {
+			PolyMLPlugin.debugMessage("Refusing to process null URL.");
+			return;
+		} else if (checkProtocol && !theUrl.getProtocol().equals(ERROR_PROTOCOL)) {
 			PolyMLPlugin.debugMessage("Refusing to process URL with "+theUrl.getProtocol()+".");
 			return;
 		}
@@ -135,6 +148,14 @@ public class ErrorLinkOpener implements HyperlinkListener {
 				PolyMLPlugin.debugMessage("Failed to set selection for "+theUrl.toString()+" : "+e+".");
 			} 
 		}
+	}
+	
+	/**
+	 * Public facing version of {@link #openBufferForURL(URL, boolean)}
+	 * @param theUrl the URL to check
+	 */
+	public void openBufferForURL(URL theUrl) {
+		openBufferForURL(theUrl, true);
 	}
 
 	/**
