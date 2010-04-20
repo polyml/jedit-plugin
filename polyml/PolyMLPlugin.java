@@ -5,6 +5,7 @@
 package polyml;
 
 import java.io.IOException;
+
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,9 +22,6 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.textarea.TextArea;
-
-import errorlist.DefaultErrorSource;
-import errorlist.ErrorSource;
 
 /**
  * Plugin class the PolyML Plugin for jedit.
@@ -45,10 +43,13 @@ public class PolyMLPlugin extends EBPlugin {
 	public static final String PROPS_RUN_FROM_FROM_FILE_DIR = "options.polyml.run_from_file_dir";
 	public static final String PROPS_STATE_OUTPUT_CSS_FILE = "options.polyml.state_output_css_file";
 	public static final String PROPS_STATE_DOC_EDITABLE = "options.polyml.state_doc_editable";
+	public static final String PROPS_SCROLL_ON_OUTPUT = "options.polyml.scroll_on_output";
+	public static final String PROPS_REFRESH_ON_BUFFER = "options.polyml.refresh_on_buffer";
 
 	/** Associates Buffers to Processes that output to the buffer */
 	static Map<Buffer, ShellBuffer> shells;
-	static DefaultErrorSource errorSource;
+	//static DefaultErrorSource errorSource;
+	static final BufferMLStatusMap compileMap = new BufferMLStatusMap();
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
 	static PolyMLPlugin jEditGUILock;
@@ -58,7 +59,6 @@ public class PolyMLPlugin extends EBPlugin {
 	public PolyMLPlugin() {
 		super();
 		shells = new Hashtable<Buffer, ShellBuffer>();
-		errorSource = null;
 		polyMLProcess = null;
 		debugBuffer = null;
 		jEditGUILock = this;
@@ -136,8 +136,6 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	public void start() {
 		// System.err.println("PolyMLPlugin: start called.");
-		errorSource = new DefaultErrorSource(NAME);
-		DefaultErrorSource.registerErrorSource(errorSource);
 	}
 
 	/**
@@ -146,10 +144,11 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	public void stop() {
 		stopAllShellBuffers();
-		DefaultErrorSource.unregisterErrorSource(errorSource);
+		// could remove BufferMLStatusMap from EditBus here.
 		if (polyMLProcess != null) {
 			polyMLProcess.closeProcess();
 		}
+		BufferMLStatusMap.unregister();
 	}
 
 	/**
@@ -180,7 +179,7 @@ public class PolyMLPlugin extends EBPlugin {
 		// System.err.println("restarting polyml...");
 		try {
 			if (polyMLProcess == null) {
-				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), errorSource);
+				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), compileMap);
 			} else {
 				polyMLProcess.setCmd(getPolyIDECmd());
 			}
@@ -242,13 +241,14 @@ public class PolyMLPlugin extends EBPlugin {
 							b = jEdit.getActiveView().getBuffer();
 						}
 
-						errorSource.removeFileErrors(b.getPath());
-						errorSource
-								.addError(new DefaultErrorSource.DefaultError(
+						// fire off compile message.
+						compileMap.setResultFor(b, null); // clear compile status (eventually necessary to clear errors, I suppose)
+						new PolyEBMessage(null, PolyMsgType.POLY_WORKING, true).send();
+						/* errorSource.removeFileErrors(b.getPath());
+						 * errorSource.addError(new DefaultErrorSource.DefaultError(
 										errorSource, ErrorSource.WARNING, b
 												.getPath(), 0, 0, 0,
-										"Compiling ML ... "));
-
+										"Compiling ML ... "));*/
 						polyMLProcess.sendCompileBuffer(b, pane);
 					}
 					

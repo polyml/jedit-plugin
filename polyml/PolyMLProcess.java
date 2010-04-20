@@ -22,8 +22,6 @@ import org.gjt.sp.jedit.textarea.TextArea;
 import pushstream.CopyPushStream;
 import pushstream.InputStreamThread;
 import pushstream.TimelyCharToStringStream;
-import errorlist.DefaultErrorSource;
-import errorlist.ErrorSource;
 
 
 /*
@@ -46,8 +44,6 @@ public class PolyMLProcess {
 	InputStreamThread polyListener; // thread that listens to polyML
 	PolyMarkupPushStream errorPushStream; // listens to PolyML and deals with markup.
 	
-	DefaultErrorSource errorSource; // jEdit error list
-	
 	File ideHeapFile;
 	int msgID; // counter for messages sent to poly
 
@@ -58,13 +54,14 @@ public class PolyMLProcess {
 	
 	// running
 	volatile boolean mRunningQ;
+	private BufferMLStatusMap compileMap;
 
 	// -
-	public PolyMLProcess(List<String> cmd, DefaultErrorSource err) throws IOException {
+	public PolyMLProcess(List<String> cmd, BufferMLStatusMap map) throws IOException {
 		super();
 		msgID = 0;
 		mRunningQ = false;
-		errorSource = err;
+		compileMap = map;
 		ideHeapFile = null;
 		process = null;
 		writer = null;
@@ -77,11 +74,11 @@ public class PolyMLProcess {
 	}
 
 	// -
-	public PolyMLProcess(DefaultErrorSource err) throws IOException {
+	public PolyMLProcess(BufferMLStatusMap map) throws IOException {
 		super();
 		msgID = 0;
 		mRunningQ = false;
-		errorSource = err;
+		compileMap = map;
 		ideHeapFile = null;
 		process = null;
 		writer = null;
@@ -243,6 +240,7 @@ public class PolyMLProcess {
 		if(pb == null) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
 					+ polyProcessCmd);
+			new PolyEBMessage(this, PolyMsgType.POLY_WORKING, null);
 			return;
 		}
 		pb.redirectErrorStream(true);
@@ -254,7 +252,7 @@ public class PolyMLProcess {
 			writer = new DataOutputStream(process.getOutputStream());
 
 			Object helloLock = new Object();
-			errorPushStream = new PolyMarkupPushStream(errorSource, compileInfos, helloLock);
+			errorPushStream = new PolyMarkupPushStream(compileMap, compileInfos, helloLock);
 
 			// setup and start listening thread.
 			polyListener = new InputStreamThread(reader,
@@ -272,7 +270,7 @@ public class PolyMLProcess {
 				try {
 					long delay = 5000;
 					long t = (new Date()).getTime() + delay;
-					System.err.println("restartProcess: wiating for hello...");
+					System.err.println("restartProcess: Waiting for hello...");
 					helloLock.wait(5000);
 					if(t <= (new Date()).getTime()) {
 						System.err.println("restartProcess: ran out of time waiting for ML to start, pretending it worked...");
@@ -285,12 +283,14 @@ public class PolyMLProcess {
 					closeProcess();
 					System.err.println("restartProcess: got interupted when waiting hello response.");
 					e.printStackTrace();
+					new PolyEBMessage(this, PolyMsgType.POLY_WORKING, null);
 				}
 			}
 		} catch (IOException e) {
 			System.err.println("PolyMLProcess:" + "Failed to start process: "
 					+ polyProcessCmd);
 			process = null;
+			new PolyEBMessage(this, PolyMsgType.POLY_WORKING, null).send();
 			throw e;
 		}
 	}
@@ -523,9 +523,14 @@ public class PolyMLProcess {
 			preSetupString += "IDE.setProjectDir \"" + projectPath + "\";\n";
 		} else {
 			// no heap means that we are not setup for IDE use;
-			errorSource.removeFileErrors(b.getPath());
-			errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
-					ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
+			/* replaced by the below.
+			 * errorSource.removeFileErrors(b.getPath());
+			 * errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
+			 * 		ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
+			 */
+			compileMap.setResultFor(b, null);
+			new PolyEBMessage(this, PolyMsgType.INFORMATION, "No IDE heap file :( ").send();
+			
 			return;
 		}
 		
