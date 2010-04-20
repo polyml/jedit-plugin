@@ -1,6 +1,5 @@
 package polyml;
 
-import java.awt.Cursor;
 import java.net.MalformedURLException;
 
 import java.net.URL;
@@ -65,10 +64,9 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	 */
 	private void openBufferForURL(String theURL) {
 		try {
-			System.err.println("Attempting to replace "+theURL);
 			if (theURL.substring(0, ERROR_PROTOCOL.length()).equals(ERROR_PROTOCOL)) {
 				theURL = theURL.replaceFirst("^"+ERROR_PROTOCOL, "http");
-				openBufferForURL(new URL(theURL), false);				
+				openBufferForURL(new URL(theURL), false);
 			}
 		} catch (MalformedURLException e) {
 			PolyMLPlugin.debugMessage("Could not create URL for "+theURL+".");
@@ -91,50 +89,51 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	 * @param theUrl the URL to open in an editor pane.
 	 * @param checkProtocol false to ignore if the protocol doesn't match.
 	 */
-		private void openBufferForURL(URL theUrl, boolean checkProtocol) {
-		if (theUrl == null) {
-			PolyMLPlugin.debugMessage("Refusing to process null URL.");
-			return;
-		} else if (checkProtocol && !theUrl.getProtocol().equals(ERROR_PROTOCOL)) {
-			PolyMLPlugin.debugMessage("Refusing to process URL with "+theUrl.getProtocol()+".");
+	private void openBufferForURL(URL theUrl, boolean checkProtocol) {
+		// Some basic checks.
+		if (theUrl == null || (checkProtocol && !theUrl.getProtocol().equals(ERROR_PROTOCOL))) {
 			return;
 		}
+		System.err.println("Attempting to open "+theUrl.toString()+"...");
+		
+		// TODO: set a search path for relative paths?  Important for, e.g. ./basis URLs.
+		
 		// Open the file.
 		final Buffer buffer;
 		String file = theUrl.getPath();
+		System.err.println("File is "+file+".");
 		if (jEdit.getBuffer(file) == null) {
 			buffer = jEdit.openFile(view,file);
 			if (buffer == null) return;
 		} else if (file != null) {
 			buffer = jEdit.getBuffer(file);
 		} else {
-			PolyMLPlugin.debugMessage("Refusing to process URL "+theUrl.toString()+" with no file part!");
+			buffer = null;
+		}
+		
+		// no line or selection data; we can stop here.
+		if (buffer == null || theUrl.getQuery() == null) {
 			return;
 		}
 		
 		// Now attempt to seek to the appropriate location.
-		if (theUrl.getQuery() == null) {
-			// no line or selection data; we can stop here.
-			return;
-		}
-		
-		// process arguments
+		System.err.println("Attempting to parse arguments "+theUrl.getQuery()+".");
+		// collect arguments
 		HashMap<String,String> args = new HashMap<String,String>(ErrorLinkOpener.args);
-		
 		ArrayList<String> parts = new ArrayList<String>(Arrays.asList(theUrl.getQuery().split("&")));
 		for (String p : parts) {
 			String[] kv = p.split("=");
 			try {
 				if (args.containsKey(kv[0])) {
 					args.put(kv[0], kv[1]);
-				} else {
-					PolyMLPlugin.debugMessage("Found unexpected pmjp argument "+kv[0]+".");
 				}
 			} catch (NullPointerException e) {
 				PolyMLPlugin.debugMessage("Could not parse URI "+theUrl.toString()+"due to "+e+".");
+				return;
 			} 
 		}
 		
+		// now attempt to apply them
 		if (args.containsKey("line")) {
 			try {
 				buffer.setProperty(Buffer.SCROLL_VERT, Integer.parseInt(args.get("line")));
