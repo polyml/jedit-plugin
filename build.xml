@@ -7,36 +7,62 @@
 
 <project name="PolyML" default="dist" basedir=".">
 
-  <!-- MODIFY THIS TO WORK WITH YOUR JEDIT LOCATION 
-	<property name="jedit.install.dir" 
-  value="/home/ldixon/local/jedit/jedit4.3pre16"/> 
-	<property name="jedit.install.dir" 
-  value="/home/ldixon/local/jedit-svn/jEdit/build"/> -->
+<!-- 
+MODIFY THIS, (or the "build.properties" file) TO WORK WITH YOUR JEDIT LOCATION
 
+* You need to set: jedit.install.dir
+This is the directory where jEdit is installed, it should contain the
+file "jEdit.jar" as well the subdirectory "jars" which contains the
+needed plugins. For the PolyML Plugin, you need to have ErrorList.jar.
 
-	<property name="jedit.user.home" value="=${user.home}/.jedit"/>
+* You may also need to set: jedit.user.home
+This is the user-space directory where custom jedit plugins get installed. 
+
+Examples of system-side installation: 
+Linux:
+	<property name="jedit.install.dir" 
+   value="jedit.install.dir=/usr/local/jedit">
+	<property name="jedit.user.home" value="${user.home}/.jedit"/>
+Mac:
+	<property name="jedit.install.dir" 
+   value="/Applications/jEdit.app/Contents/Resources/Java">
+	<property name="jedit.user.home" value="${user.home}/Library/jEdit"/>
+-->
 
 	<property file="build.properties"/>
-
-  <!-- Maybe set this to your build porperties dir -->
-	<!-- <property file="build.properties"/> -->
   
+	<property name="src.dir" value="src"/>
+	<property name="build.dir" value="build"/>
+    <property name="jedit-plugin-files.dir" value="jedit-plugin-files"/>
+	<property name="install.dir"  value="dist"/>
 	<property name="jar.name"  value="PolyML.jar"/>
-
-	<property name="src.dir" value="."/>
-	<property name="build.dir" value="bin"/>
-	<property name="install.dir"  value="."/>
 
 	<property name="jedit.plugins.dir" value="${jedit.install.dir}/jars"/>
 
 	<path id="project.class.path">
+		<pathelement location="${src.dir}"/>
 		<pathelement location="${jedit.user.home}/jars/ErrorList.jar"/>
 		<pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
 		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 	</path>
 
+	<target name="echotest">
+    <echo>$${jedit.user.home} = ${jedit.user.home}</echo>
+    <echo>$${jedit.install.dir} = ${jedit.install.dir}</echo>
+    <echo>$${src.dir} = ${src.dir}</echo>
+    <echo>$${build.dir} = ${build.dir}</echo>
+	</target>
+
 	<target name="init">
+    <tstamp/>
 		<mkdir dir="${build.dir}"/>
+    <fail message="No build.properties file; please copy build.properties.sample and set the needed jEdit properties.">
+     <condition>
+       <not>
+         <available file="build.properties"/>
+       </not>
+     </condition>
+   </fail>
 	</target>
 
 	<target name="compile" depends="init">
@@ -48,22 +74,20 @@
       target="1.5"
 			includeJavaRuntime="yes">
 			<classpath refid="project.class.path"/>
-			<exclude name="unused/**"/>
-			<exclude name="${build.dir}"/>
-			<exclude name="${build.dir}/**/*"/>
 		</javac>
 	</target>
-
 
 	<target name="dist" depends="compile">
 		<mkdir dir="${install.dir}"/>
 		<copy todir="${build.dir}">
-			<fileset dir="${src.dir}">
+            <fileset dir="${jedit-plugin-files.dir}">
+				<exclude name="${build.dir}/**"/>
 				<exclude name="${build.dir}"/>
-				<exclude name="${build.dir}/**/*"/>
+				<exclude name="${install.dir}/**"/>
+				<exclude name="${install.dir}"/>
 				<include name="**/*.props"/>
 				<include name="**/*.xml"/>
-        <include name="**/*.sml"/>
+                <include name="**/*.sml"/>
 				<exclude name="**/build.xml"/>
 				<include name="**/*.html"/>
 				<include name="**/*.gif"/>
