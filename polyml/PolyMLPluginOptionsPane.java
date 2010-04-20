@@ -44,6 +44,8 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 	private JCheckBox useFileDir;
 
 	private JCheckBox editableDocument;
+	private JCheckBox scrollOnOutput;
+	private JCheckBox refreshOnBuffer;
 	
 	/**
 	 * Default constructor. Note that the name is important!
@@ -69,7 +71,17 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		editableDocument = new JCheckBox("State View Document editable?",
 				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_STATE_DOC_EDITABLE)));
 		editableDocument.setToolTipText("Allow the document which displays prover state to be edited (for debugging)");
-		addComponent(editableDocument);
+		addComponent(editableDocument);	
+		
+		scrollOnOutput = new JCheckBox("Scroll to bottom on output?",
+				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_SCROLL_ON_OUTPUT)));
+		scrollOnOutput.setToolTipText("Scroll to the bottom of the status document when output changes?");
+		addComponent(scrollOnOutput);
+		
+		refreshOnBuffer = new JCheckBox("Refresh error list on buffer change?",
+				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_REFRESH_ON_BUFFER)));
+		refreshOnBuffer.setToolTipText("Append all relevant errors when a new buffer is viewed?");
+		addComponent(refreshOnBuffer);
 		
 		polyideCommand = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 25);
 		polyideCommand.setToolTipText("Command to start PolyML for processing edited files.");
@@ -100,6 +112,8 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		jEdit.setProperty(PolyMLPlugin.PROPS_SHELL_PROMPT, shellPrompt.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE, cssFile.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_DOC_EDITABLE, String.valueOf(editableDocument.isSelected()));
+		jEdit.setProperty(PolyMLPlugin.PROPS_SCROLL_ON_OUTPUT, String.valueOf(scrollOnOutput.isSelected()));
+		jEdit.setProperty(PolyMLPlugin.PROPS_REFRESH_ON_BUFFER, String.valueOf(refreshOnBuffer.isSelected()));
 		
 		if(!PolyMLPlugin.restartPolyML()) {
 			JOptionPane.showMessageDialog(null, "PolyML restart failed.", 

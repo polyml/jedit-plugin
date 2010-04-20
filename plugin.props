@@ -141,5 +141,11 @@ options.polyml.state_output_css_file=
 # must be same as : PolyMLPlugin.PROPS_STATE_DOCUMENT_EDITABLE
 options.polyml.state_doc_editable=false
 
+# must be same as : PolyMLPlugin.PROPS_SCROLL_ON_OUTPUT
+options.polyml.scroll_on_output=true
+
+# must be same as : PolyMLPlugin.PROPS_REFRESH_ON_BUFFER
+options.polyml.refresh_on_buffer=true
+
 ## details of the dockable
 polyml-state.title=PolyML State
