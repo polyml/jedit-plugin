@@ -26,32 +26,41 @@ public class StateViewDocument {
 	private static final String StyleSheet = ""+
 		"body {\n"+
 		"	color: black;\n"+
-		"	background-color: #DDD;\n"+
+		"	background-color: '#DDDDDD';\n"+
 		"}\n"+
-		"."+CompileResult.STATUS_SUCCESS+" {\n" +
+		"p {\n"+
+		"  white-space: pre-wrap;\n"+
+		"  word-wrap: break-word;\n"+
+		"}\n"+
+		"."+String.valueOf(CompileResult.STATUS_SUCCESS)+" {\n" +
 		"	color: green;\n" +
 		"}\n" +
-		"."+CompileResult.STATUS_PRELUDE_FAILED+", " +
-		"."+CompileResult.STATUS_PARSE_FAILED+", " +
-		"."+CompileResult.STATUS_TYPECHECK_FAILED+", " +
-		"."+CompileResult.STATUS_EXCEPTION_RAISED+" { \n" +
+		"."+String.valueOf(CompileResult.STATUS_PRELUDE_FAILED)+", " +
+		"."+String.valueOf(CompileResult.STATUS_PARSE_FAILED)+", " +
+		"."+String.valueOf(CompileResult.STATUS_TYPECHECK_FAILED)+", " +
+		"."+String.valueOf(CompileResult.STATUS_EXCEPTION_RAISED)+" {\n" +
 		"	color: red;\n" +
 		"}\n"+
-		"."+CompileResult.STATUS_CANCEL+", " +
-		"."+CompileResult.STATUS_BUG+" \n{"+
+		"."+String.valueOf(CompileResult.STATUS_CANCEL)+", " +
+		"."+String.valueOf(CompileResult.STATUS_BUG)+" {\n"+
 		"	color: magenta;\n" +
 		"}\n"+
-		".gray {"+
+		".gray {\n"+
 		"   color: gray;\n"+
 		"}\n"+
-		".info {"+
-		"   color: darkblue;\n"+
-		"   border-bottom: 2px solid black;\n"+
+		".info {\n"+
+		"   color: navy;\n"+
+		"   border: solid;\n"+
+		"   border-width: 2pt;\n"+
+		"   border-color: black;\n"+
+		"}\n"+
+		".debug {\n"+
+		"   display: none;\n"+
 		"}\n";
 
 	/**
 	 * Resets the active document on the EditorPane.
-	 * Will most likely destroy the old one.
+	 * Intended to destroy the old one.
 	 * Sets a new root element.
 	 */
 	public StateViewDocument(HTMLDocument doc) {
@@ -71,7 +80,7 @@ public class StateViewDocument {
 		// now drill down to add our custom root element
 		el = (BlockElement) getFirstChild(el, "body");
 		try {
-			doc.insertAfterStart(el, "<div class=\"root\"></div>");
+			this.doc.insertAfterStart(el, "<div class=\"root\"></div>");
 		} catch (BadLocationException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -102,7 +111,7 @@ public class StateViewDocument {
 	
 	/**
 	 * Appends pure HTML crudely to the current panel.
-	 * Don't think special characters are escaped.
+	 * TODO: Don't think special characters are escaped.
 	 * @param text the HTML to append.
 	 */
 	public synchronized void appendHTML(String text) {
@@ -118,11 +127,12 @@ public class StateViewDocument {
 
 	/**
 	 * Appends HTML crudely to the current panel, suffixing a newline.
+	 * TODO: Neither special characters nor HTML is escaped just now.
 	 * @param text a line of HTML to append.
 	 * @param cls the class attribute to give the element.
 	 */
 	public void appendPar(String text, String cls) {
-		text.replaceAll("\\n", "<br/>\n");
+		//text.replaceAll("\\n", "<br/>\n");
 		if (cls == null || cls.equals("")) {
 			cls = "";
 		} else {
@@ -130,8 +140,14 @@ public class StateViewDocument {
 		}
 		appendHTML("<p"+cls+">"+text+"</p>");
 	}
-	
 
+	/**
+	 * Shamelessly convenience method for {@link #appendPar(String, String)}.
+	 */
+	public void appendPar(String msg, char c) {
+		appendPar(msg, String.valueOf(c));
+	}
+	
 	/**
 	 * Loads styles, but does not remove existing ones: therefore this method should 
 	 * probably be run only once per document.
@@ -139,6 +155,7 @@ public class StateViewDocument {
 	private void loadStyles() {
 		// built-in customisation.
 		doc.getStyleSheet().addRule(StyleSheet);
+		String report = "";
 		
         // Add external stylesheet if defined
 		String stylePath = jEdit.getProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE);
@@ -152,22 +169,16 @@ public class StateViewDocument {
 				    rules.append(line + System.getProperty("line.separator"));
 				}
 			} catch (FileNotFoundException e) {
-				rules = null;
+				report = e.getMessage();
 			} catch (IOException e) {
-				rules = null;
+				report = e.getMessage();
 			}
-			if (rules == null) {
-				System.err.println("PolyML Plugin: Specified external stylesheet not found or not read.");
+			if (rules.toString().length() == 0) {
+				System.err.println("PolyML Plugin: Specified external stylesheet not found or not read: "+report);
 			} else {
 				doc.getStyleSheet().addRule(rules.toString());
 			}
 		}
 	}
 
-	/**
-	 * Shamelessly convenience method for {@link #appendPar(String, String)}.
-	 */
-	public void appendPar(String msg, char c) {
-		appendPar(msg, String.valueOf(c));
-	}
 }
