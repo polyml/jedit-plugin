@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Enumeration;
 
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
@@ -27,6 +28,7 @@ public class StateViewDocument {
 		"body {\n"+
 		"	color: black;\n"+
 		"	background-color: '#DDDDDD';\n"+
+		"   padding: 11pt; \n"+
 		"}\n"+
 		"p {\n"+
 		"  white-space: pre-wrap;\n"+
@@ -55,7 +57,8 @@ public class StateViewDocument {
 		"   border-color: black;\n"+
 		"}\n"+
 		".debug {\n"+
-		"   display: none;\n"+
+		"   font-size: 0px;\n"+
+		"   margin: 0px; \n"+
 		"}\n";
 
 	/**
@@ -79,15 +82,17 @@ public class StateViewDocument {
 				
 		// now drill down to add our custom root element
 		el = (BlockElement) getFirstChild(el, "body");
+		/*
 		try {
-			this.doc.insertAfterStart(el, "<div class=\"root\"></div>");
+			this.doc.insertAfterStart(el, "<span class=\"root\"></span>");
 		} catch (BadLocationException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		// retrieve that which we've just added (d'oh)
-		el = (BlockElement) getFirstChild(el, "div");
+		el = (BlockElement) getFirstChild(el, "span");
+		*/
 		appendRoot = el;
 		
 		loadStyles();
@@ -117,7 +122,8 @@ public class StateViewDocument {
 	public synchronized void appendHTML(String text) {
 		// initialise stuff
 		try {
-			doc.insertBeforeEnd(appendRoot, text);
+			doc.insertAfterStart(appendRoot, text);
+			//doc.insertBeforeEnd(appendRoot, text);
 		} catch (BadLocationException e) {
 			System.err.println("BadLocation writing data to HTML panel");
 		} catch (IOException e) {
@@ -149,10 +155,19 @@ public class StateViewDocument {
 	}
 	
 	/**
-	 * Loads styles, but does not remove existing ones: therefore this method should 
-	 * probably be run only once per document.
+	 * Loads styles.
+	 * Note that this does not remove old styles, so should be run only once per document.
 	 */
 	private void loadStyles() {
+		/* doesn't work...
+		// remove old styles
+		Enumeration<?> styles = doc.getStyleSheet().getStyleNames();
+		while (styles != null && styles.hasMoreElements()) {
+			String s = styles.nextElement().toString();
+			System.out.println("Removing style "+s);
+			doc.getStyleSheet().removeStyle(s);
+		}*/
+
 		// built-in customisation.
 		doc.getStyleSheet().addRule(StyleSheet);
 		String report = "";
@@ -163,7 +178,7 @@ public class StateViewDocument {
 			StringBuilder rules = new StringBuilder();
 			BufferedReader reader;
 			try {
-				reader = new BufferedReader(new FileReader(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE));
+				reader = new BufferedReader(new FileReader(jEdit.getProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE)));
 				String line = null;
 				while (( line = reader.readLine()) != null) {
 				    rules.append(line + System.getProperty("line.separator"));
