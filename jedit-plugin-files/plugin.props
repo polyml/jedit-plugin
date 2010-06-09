@@ -147,5 +147,14 @@ options.polyml.scroll_on_output=true
 # must be same as : PolyMLPlugin.PROPS_REFRESH_ON_BUFFER
 options.polyml.refresh_on_buffer=true
 
+# TODO: make this configurable
+options.polyml.warningColor=#ffa800
+
+# TODO: make this configurable
+options.polyml.errorColor=#ff0000
+
+# TODO: make this configurable
+options.polyml.infoColor=#ccccff
+
 ## details of the dockable
 polyml-state.title=PolyML State
