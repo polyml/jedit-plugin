@@ -14,6 +14,8 @@ import javax.swing.event.HyperlinkEvent.EventType;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.Selection.Range;
 
 /**
@@ -89,7 +91,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	 * @param theUrl the URL to open in an editor pane.
 	 * @param checkProtocol false to ignore if the protocol doesn't match.
 	 */
-	private void openBufferForURL(URL theUrl, boolean checkProtocol) {
+	private void openBufferForURL(final URL theUrl, final boolean checkProtocol) {
 		// Some basic checks.
 		if (theUrl == null || (checkProtocol && !theUrl.getProtocol().equals(ERROR_PROTOCOL))) {
 			return;
@@ -100,8 +102,8 @@ public class ErrorLinkOpener implements HyperlinkListener {
 		
 		// Open the file.
 		final Buffer buffer;
-		String file = theUrl.getPath();
-		System.err.println("File is "+file+".");
+		final String file = theUrl.getPath();
+		System.err.println(" - File is "+file+".");
 		if (jEdit.getBuffer(file) == null) {
 			buffer = jEdit.openFile(view,file);
 			if (buffer == null) return;
@@ -117,10 +119,10 @@ public class ErrorLinkOpener implements HyperlinkListener {
 		}
 		
 		// Now attempt to seek to the appropriate location.
-		System.err.println("Attempting to parse arguments "+theUrl.getQuery()+".");
+		System.err.println(" - Attempting to parse arguments "+theUrl.getQuery()+".");
 		// collect arguments
-		HashMap<String,String> args = new HashMap<String,String>(ErrorLinkOpener.args);
-		ArrayList<String> parts = new ArrayList<String>(Arrays.asList(theUrl.getQuery().split("&")));
+		final HashMap<String,String> args = new HashMap<String,String>(ErrorLinkOpener.args);
+		final ArrayList<String> parts = new ArrayList<String>(Arrays.asList(theUrl.getQuery().split("&")));
 		for (String p : parts) {
 			String[] kv = p.split("=");
 			try {
@@ -128,25 +130,38 @@ public class ErrorLinkOpener implements HyperlinkListener {
 					args.put(kv[0], kv[1]);
 				}
 			} catch (NullPointerException e) {
-				PolyMLPlugin.debugMessage("Could not parse URI "+theUrl.toString()+"due to "+e+".");
+				PolyMLPlugin.debugMessage(" -- Could not parse URI "+theUrl.toString()+"due to "+e+".");
 				return;
-			} 
+			}
 		}
-		
-		// now attempt to apply them
-		if (args.containsKey("line")) {
+
+		// now attempt to apply the changes
+		JEditTextArea ta = view.getTextArea();
+		int preferredCaretOffset = -1;
+		Selection sel = null;
+		if (args.containsKey("start") && args.containsKey("end")) {
 			try {
-				buffer.setProperty(Buffer.SCROLL_VERT, Integer.parseInt(args.get("line")));
-			} catch (NumberFormatException e) {
-				PolyMLPlugin.debugMessage("Failed to set line number for "+theUrl.toString()+" : "+e+".");
-			} 
-		} if (args.containsKey("start") && args.containsKey("end")) {
-			try {
-				buffer.setProperty( Buffer.SELECTION, new Range(Integer.parseInt(args.get("start")), Integer.parseInt(args.get("end"))) );
+				sel = PolyMLPlugin.compileMap.getSelectionFor(buffer, Integer.parseInt(args.get("start")), Integer.parseInt(args.get("end")));
+				preferredCaretOffset = sel.getEnd();
 			} catch (NumberFormatException e) {
 				PolyMLPlugin.debugMessage("Failed to set selection for "+theUrl.toString()+" : "+e+".");
-			} 
+			}
+		} else if (args.containsKey("line")) {
+			try {
+				preferredCaretOffset = ta.getLineStartOffset(Integer.parseInt(args.get("line")));
+			} catch (NumberFormatException e) {
+				PolyMLPlugin.debugMessage("Failed to set line number for "+theUrl.toString()+" : "+e+".");
+			}
 		}
+		// finally, set horizontalOffset, caret and selection.  TODO: make at least the caret optional?
+		if (preferredCaretOffset >= 0) {
+			ta.setHorizontalOffset(ta.getScreenLineOfOffset(preferredCaretOffset));
+			ta.setCaretPosition(preferredCaretOffset);
+		}
+		if (sel != null) {
+			ta.setSelection(sel);
+		}
+
 	}
 	
 	/**
