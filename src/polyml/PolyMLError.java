@@ -12,19 +12,29 @@ public class PolyMLError {
 	static char KIND_WARNING = 'W';
 	
 	int kind;
-	public int startPos;
-	public int endPos;
+	int startPos;
+	int endPos;
 	public String message;
 	public String fileName;
 	public String randomValue;
 	
-	private PolyMLError(char kind, int startPos, int endPos, String msg){
+	protected PolyMLError(char kind, int startPos, int endPos, String msg){
 		this.kind = kind;
 		this.startPos = startPos;
 		this.endPos = endPos;
 		this.message = msg;
 		fileName = null;
 		randomValue = null;
+	}
+	
+	/** Returns the start position of the error */
+	public int getStartPos() {
+		return startPos;
+	}
+	
+	/** Returns the end position of the error. */
+	public int getEndPos() {
+		return endPos;
 	}
 	
 	/**
@@ -35,7 +45,7 @@ public class PolyMLError {
 	 * @return
 	 */
 	static public PolyMLError newExceptionError(int startOffset, int finalOffset, String exception_message) {
-		return new PolyMLError(KIND_EXCEPTION, startOffset, finalOffset, exception_message);
+		return new ViewablePolyMLError(KIND_EXCEPTION, startOffset, finalOffset, exception_message);
 	}
 	
 	/**
@@ -44,7 +54,7 @@ public class PolyMLError {
 	 * @return
 	 */
 	static public PolyMLError newPreludeError(String exception_message) {
-		return new PolyMLError(KIND_PRELUDE_FAILURE, 0, 0, exception_message);
+		return new ViewablePolyMLError(KIND_PRELUDE_FAILURE, 0, 0, exception_message);
 	}
 	
 	/**
