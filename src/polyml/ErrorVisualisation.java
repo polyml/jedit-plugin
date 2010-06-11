@@ -12,6 +12,7 @@ import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.TextAreaExtension;
 
 /**
@@ -20,9 +21,9 @@ import org.gjt.sp.jedit.textarea.TextAreaExtension;
 public abstract class ErrorVisualisation extends TextAreaExtension {
 
 	/* Some common values */
-	protected static final ImageIcon ERROR_ICON = new ImageIcon(PolyMLPlugin.class.getResource("error.png"));
-	protected static final ImageIcon WARNING_ICON = new ImageIcon(PolyMLPlugin.class.getResource("warning.png"));
-	protected static final ImageIcon INFO_ICON = new ImageIcon(PolyMLPlugin.class.getResource("info.png"));
+	protected static final ImageIcon ERROR_ICON = new ImageIcon(PolyMLPlugin.class.getResource("img/error.png"));
+	protected static final ImageIcon WARNING_ICON = new ImageIcon(PolyMLPlugin.class.getResource("img/warning.png"));
+	protected static final ImageIcon INFO_ICON = new ImageIcon(PolyMLPlugin.class.getResource("img/info.png"));
 	//private static final ImageIcon OK_ICON = new ImageIcon(PolyMLPlugin.class.getResource("ok.png"));
 	/*protected static final Map<Character, ImageIcon> ICON_MAP = new HashMap<Character, ImageIcon>(){{
 		put(PolyMarkup.KIND_TYPE_INFO, INFO_ICON);
@@ -65,6 +66,23 @@ public abstract class ErrorVisualisation extends TextAreaExtension {
 			}
 		}
 		return list;
+	}
+	
+	/**
+	 * Gets all errors on a specified line.
+	 * @param offset the offset of the line to check.
+	 * @return
+	 */
+	protected List<PolyMLError> getInfoOnLine(int line) {
+		JEditTextArea area = editPane.getTextArea();
+		
+		List<PolyMLError> errs = new ArrayList<PolyMLError>();
+		for (PolyMLError e : getBufferInfo()) {
+			int lineNo = area.getLineOfOffset(e.getStartPos());
+			if (lineNo != line) continue;
+			errs.add(e);
+		}
+		return errs;
 	}
 	
 	/**
