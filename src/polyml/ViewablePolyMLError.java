@@ -14,8 +14,25 @@ public class ViewablePolyMLError extends PolyMLError {
 	protected Position startOffsetPos;
 	protected Position endOffsetPos;
 	
+	/**
+	 * 
+	 * @param kind see {@link PolyMLError#kind}
+	 * @param startPos original starting offset
+	 * @param endPos original ending offset
+	 * @param msg see {@link PolyMLError#msg}
+	 */
 	ViewablePolyMLError(char kind, int startPos, int endPos, String msg){
 		super(kind, startPos, endPos, msg);
+		startOffsetPos = null;
+		endOffsetPos = null;
+	}
+	
+	/**
+	 * Create an error from existing markup.
+	 * @throws MarkupException 
+	 */
+	ViewablePolyMLError(PolyMarkup m) throws MarkupException {
+		super(m);
 		startOffsetPos = null;
 		endOffsetPos = null;
 	}

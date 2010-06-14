@@ -5,7 +5,7 @@ import java.util.Iterator;
 /**
  * A PolyML error.
  */
-public class PolyMLError {
+public abstract class PolyMLError {
 	static char KIND_EXCEPTION = 'X';
 	static char KIND_PRELUDE_FAILURE = 'L';
 	static char KIND_FATAL = 'E';
@@ -25,16 +25,6 @@ public class PolyMLError {
 		this.message = msg;
 		fileName = null;
 		randomValue = null;
-	}
-	
-	/** Returns the start position of the error */
-	public int getStartPos() {
-		return startPos;
-	}
-	
-	/** Returns the end position of the error. */
-	public int getEndPos() {
-		return endPos;
 	}
 	
 	/**
@@ -118,4 +108,15 @@ public class PolyMLError {
 	public boolean isFatal(){
 		return (kind == KIND_FATAL || kind == KIND_EXCEPTION || kind == KIND_PRELUDE_FAILURE);
 	}
+	
+	/** Returns the start position of the error */
+	public int getStartPos() {
+		return startPos;
+	}
+	
+	/** Returns the end position of the error. */
+	public int getEndPos() {
+		return endPos;
+	}
+	
 }
