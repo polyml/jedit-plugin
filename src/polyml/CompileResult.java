@@ -17,6 +17,7 @@ public class CompileResult {
 	public int finalOffset;
 	public String requestID;
 	public String parseID;
+	/** List of errors returned in this result */
 	public List<PolyMLError> errors;
 	
 	public CompileResult(String rid, String pid, String filename, char st, int e, List<PolyMLError> errs){
@@ -108,7 +109,7 @@ public class CompileResult {
 						PolyMarkup m2 = i2.next();
 						if (m2.getKind() == 'E') {
 							try {
-								errors.add(new PolyMLError(m2));
+								errors.add(new ViewablePolyMLError(m2));
 							} catch(java.lang.NumberFormatException e) {
 								System.err.print("Cannot create error, bad markup: \n" 
 										+ m2.toXMLString());
