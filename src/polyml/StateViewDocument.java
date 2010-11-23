@@ -1,5 +1,6 @@
 package polyml;
 
+import java.awt.Font;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -18,13 +19,15 @@ public class StateViewDocument {
 	private final HTMLDocument doc;
 	/** Root to which all text will be appended for now. */
 	private Element appendRoot;
-	
+
 	/**
 	 * Defines how status messages will be displayed.
 	 * TODO: allow customisation
 	 */
 	private static final String StyleSheet = ""+
 		"body {\n"+
+//		"	font-family: monospace;\n"+
+//		"	font-size: 10pt;\n"+
 		"	color: black;\n"+
 		"	background-color: '#DDDDDD';\n"+
 		"   padding: 11pt; \n"+
@@ -78,9 +81,11 @@ public class StateViewDocument {
 			}
 		}
 		if (el == null) System.err.println("Couldn't find root element!");
-				
+		
 		// now drill down to add our custom root element
 		el = (BlockElement) getFirstChild(el, "body");
+		
+
 		/*
 		try {
 			this.doc.insertAfterStart(el, "<span class=\"root\"></span>");
@@ -154,6 +159,28 @@ public class StateViewDocument {
 	}
 	
 	/**
+	 * Turns a JEdit font preference string into some CSS which can
+	 * be used by the {@link StateViewDocument}.
+	 * @param preference the preference string
+	 * @return some CSS
+	 */
+	private String fontPreferenceToCSS(String preference) {
+		String family = "monospace";
+		int size = 10;
+		try {
+			Font monoFont = jEdit.getFontProperty(preference);
+			family = monoFont.getFamily();
+			size = monoFont.getSize();
+		} catch (Exception e) {
+			PolyMLPlugin.logErr("Could not get font preference "+preference+".");
+		}
+		return "body { \n"+
+			"  font-family: \""+family+"\";\n"+
+			"  font-size: "+size+"pt;\n"+
+			"}\n";
+	}
+	
+	/**
 	 * Loads styles.
 	 * Note that this does not remove old styles, so should be run only once per document.
 	 */
@@ -169,6 +196,8 @@ public class StateViewDocument {
 
 		// built-in customisation.
 		doc.getStyleSheet().addRule(StyleSheet);
+		// get jEdit textarea preferences and apply them to the body.   
+		doc.getStyleSheet().addRule(fontPreferenceToCSS("view.font")); // view.font
 		String report = "";
 		
         // Add external stylesheet if defined
