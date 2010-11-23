@@ -4,7 +4,6 @@ import java.util.Hashtable;
 import java.util.Map;
 import org.gjt.sp.jedit.Buffer;
 
-
 /*
  * Information about a compilation requests.
  */
@@ -55,9 +54,12 @@ public class CompileInfos {
 	}
 	
 	/**
-	 * called when a result is received for parsing a buffer
-	 * @param r
-	 * @return
+	 * Called when a result is received for parsing a buffer.
+	 * Finds the request associated with this result, attaches the result to
+	 * the request then returns the request with embedded result..
+	 * @param r the compileresult, which is attached to the appropriate request.
+	 * @return the request now attached to this result
+	 * @see CompileRequest#result
 	 */
 	public synchronized CompileRequest compileCompleted(CompileResult r) {
 		if(r.requestID.equals(lastRequestID)) {

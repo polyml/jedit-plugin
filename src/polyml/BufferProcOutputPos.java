@@ -6,10 +6,10 @@ import org.gjt.sp.jedit.buffer.BufferListener;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 
 /**
- * Manages a position in a buffer that gets moved when stuff is inserted or removed before that position. 
- * 
+ * Manages a position in a buffer that gets moved when stuff is inserted or
+ * removed before that position. 
+ * @deprecated in favour of jEdit's Position objects.
  * @author ldixon
- *
  */
 public class BufferProcOutputPos extends BufferChangeAdapter implements BufferListener {
 	private int mPrePromptPos;

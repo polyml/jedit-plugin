@@ -35,6 +35,11 @@ public class CompileRequest {
 		this(prelude, fileName, src, null);
 	}
 
+	/**
+	 * Reuses this object for a new CompileRequest on the same file.
+	 * @param compileRequest the new request
+	 * @param sentParseID the parseId of the new request
+	 */
 	public void freshRequest(CompileRequest compileRequest, String sentParseID) {
 		src = compileRequest.src;
 		result = null;

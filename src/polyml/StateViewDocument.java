@@ -172,7 +172,7 @@ public class StateViewDocument {
 			family = monoFont.getFamily();
 			size = monoFont.getSize();
 		} catch (Exception e) {
-			PolyMLPlugin.logErr("Could not get font preference "+preference+".");
+			System.err.println("Could not get font preference "+preference+".");
 		}
 		return "body { \n"+
 			"  font-family: \""+family+"\";\n"+
