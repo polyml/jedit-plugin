@@ -44,12 +44,18 @@ public class PolyMLPlugin extends EBPlugin {
 	public static final String PROPS_STATE_OUTPUT_CSS_FILE = "options.polyml.state_output_css_file";
 	public static final String PROPS_STATE_DOC_EDITABLE = "options.polyml.state_doc_editable";
 	public static final String PROPS_SCROLL_ON_OUTPUT = "options.polyml.scroll_on_output";
-	public static final String PROPS_REFRESH_ON_BUFFER = "options.polyml.refresh_on_buffer";
-
+	public static final String PROPS_BUFFER_CHANGE = "options.polyml.buffer_change_behaviour";
+	public static final String PROPS_BUFFER_CHANGE_CLEAR = "Clear and write new status";
+	public static final String PROPS_BUFFER_CHANGE_APPEND = "Append new status";
+	public static final String PROPS_BUFFER_CHANGE_NOWT = "Do nothing";
+	public static final String[] PROPS_BUFFER_CHANGE_OPTIONS = new String[] {
+		PROPS_BUFFER_CHANGE_CLEAR, PROPS_BUFFER_CHANGE_APPEND, PROPS_BUFFER_CHANGE_NOWT
+	};
+	
 	/** Associates Buffers to Processes that output to the buffer */
 	static Map<Buffer, ShellBuffer> shells;
-	//static DefaultErrorSource errorSource;
 	static final BufferMLStatusMap compileMap = new BufferMLStatusMap();
+	
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
 	static PolyMLPlugin jEditGUILock;
@@ -136,6 +142,7 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	public void start() {
 		// System.err.println("PolyMLPlugin: start called.");
+		// TODO: add TextAreaExtension decorations to existing buffers?
 	}
 
 	/**
@@ -391,7 +398,10 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
-	/* start and restart are the same: they restart shell in the current buffer */
+	/**
+	 * start and restart are the same: they restart shell in the current buffer
+	 * @see #restartShellInBuffer(Buffer)
+	 */
 	static public void startShellInBuffer(Buffer b) {
 		// System.err.println("startShellInBuffer");
 		restartShellInBuffer(b);
@@ -477,7 +487,11 @@ public class PolyMLPlugin extends EBPlugin {
 		}
 	}
 
-	/** handle buffer closing events to close associated process. */
+	/**
+	 * Handles EventBus events.  Specifically:
+	 * <li>handle buffer closing events to close associated process.
+	 * <li>add and remove error-highlighting textarea extensions 
+	 */
 	public void handleMessage(EBMessage msg) {
 		/*
 		 * if (msg instanceof PluginUpdate) { if(((PluginUpdate)msg).getWhat()
@@ -509,17 +523,22 @@ public class PolyMLPlugin extends EBPlugin {
 			// }
 			// }
 		} else if (msg instanceof EditPaneUpdate) {
-			// handle creation/changing of shell buffers: add on extra painting
-			// extension when needed.
+			// handle creation/changing of shell buffers:
+			//   add / remove extra painting extensions when needed.
 			EditPaneUpdate editPaneUpdate = (EditPaneUpdate) msg;
+			EditPane pane = editPaneUpdate.getEditPane();
 			if (editPaneUpdate.getWhat() == EditPaneUpdate.CREATED) {
-				usingShellBufferTextArea(editPaneUpdate.getEditPane());
+				usingShellBufferTextArea(pane);
+				//new ErrorHighlight(pane).addToPane(); // TODO: add
+				//new ErrorGutterIcon(pane).addToPane();// TODO: add
 			} else if (editPaneUpdate.getWhat() == EditPaneUpdate.BUFFER_CHANGING) {
-				unusingShellBufferTextArea(editPaneUpdate.getEditPane());
+				unusingShellBufferTextArea(pane);
 			} else if (editPaneUpdate.getWhat() == EditPaneUpdate.BUFFER_CHANGED) {
-				usingShellBufferTextArea(editPaneUpdate.getEditPane());
+				usingShellBufferTextArea(pane);
 			} else if (editPaneUpdate.getWhat() == EditPaneUpdate.DESTROYED) {
-				unusingShellBufferTextArea(editPaneUpdate.getEditPane());
+				unusingShellBufferTextArea(pane);
+				//ErrorHighlight.removeFromPane(pane);  // TODO: add
+				//ErrorGutterIcon.removeFromPane(pane); // TODO: add
 			}
 		}
 	}
@@ -552,7 +571,6 @@ public class PolyMLPlugin extends EBPlugin {
 		return debugBuffer;
 	}
 
-	/* start and restart are the same: they restart shell in the current buffer */
 	static public void test() {
 		synchronized (jEditGUILock) {
 			jEdit.newFile(jEdit.getActiveView());

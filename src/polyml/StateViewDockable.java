@@ -89,10 +89,13 @@ public class StateViewDockable extends JPanel implements EBComponent {
 		public AbstractButton getButton();
 	}
 	
+	/** Friendly name for separators */
+	static final ButtonedAction separator = null;
+	
 	/**
 	 * Convenient implementation of an Action which sets name properties in advance.
 	 */
-	abstract class NamedAction extends AbstractAction implements ButtonedAction {
+	abstract class NamedAction extends AbstractAction implements ButtonedAction {		
 		JButton btn;
 		public NamedAction(String myname, String mytip) {
 			putValue(NAME, myname);
@@ -129,24 +132,32 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 * All Toolbar items to be listed (if not defined) in this array.
 	 */
 	private final ButtonedAction[] toolbarDef = new ButtonedAction[]{
-		new NamedAction("Export", "Export contents of this log to a new buffer") {
+		new NamedAction("Export", "Export contents of this log to a debug buffer") {
 			public void actionPerformed(ActionEvent e) {
+				String text = panel.getText();
 				Buffer newbuffer = jEdit.newFile(view);
-				newbuffer.insert(0, panel.getText());
+				newbuffer.insert(0, text);
 		}},
 		new NamedAction("Clear", "Erase the contents of this log.") {
 			public void actionPerformed(ActionEvent e) {
 				newDocument();
 		}},
-		null, // separator
+		separator,
 		new NamedAction("Compile", "Process Buffer in ML") {
 			public void actionPerformed(ActionEvent e) {
 				jEdit.getAction("polyml-menu.mitem-process_buffer").invoke(view);
 		}},
-		new NamedAction("Refresh Errors", "Dumps errors into the buffer (for testing).") {
+		new NamedAction("Refresh Errors", "Displays stored status for the status buffer.") {
 			public void actionPerformed(ActionEvent e) {
 					displayResultFor(view.getBuffer());
 		}},
+		new NamedAction("Print All Status", "Dumps all status messages into the status buffer") {
+			public void actionPerformed(ActionEvent e) {
+				for (Buffer b : PolyMLPlugin.compileMap.getBuffers()) {
+					displayResultFor(b);
+				}
+		}},	
+		separator,
 		stateButton // defined above.
 	};
 	
@@ -300,9 +311,12 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	public void displayResultFor(Buffer b) {
 		CompileResult r = PolyMLPlugin.compileMap.getResultFor(b);
 		if (r == null) {
-			doc.appendPar("No Status for buffer "+b+".", PolyMLError.KIND_WARNING);
+			doc.appendPar("No Status for buffer "+(b==null?"(null)":b.getName())+".", PolyMLError.KIND_WARNING);
 			scrollToBottom(false);
 		} else {
+			if (b != null) {
+				doc.appendPar("Status for "+(b==null?"(null)":b.getName()), "info");
+			}
 			displayResult(r);
 		}
 	}
@@ -378,16 +392,17 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 * Watch only for our own errors.
 	 */ @Override
 	public void handleMessage(EBMessage message) {
-		// doc.appendPar("MSG["+msg.toString()+"]", "gray"); // DEBUG
+		doc.appendPar("MSG["+message.toString()+"]", "debug"); // DEBUG
 		 
+	
 		// check for buffer update notifications, which will trigger a reload.
 		if (message instanceof PolyEBMessage) {
 			PolyEBMessage msg = (PolyEBMessage) message;
 			if (msg.getType() == PolyMsgType.BUFFER_UPDATE) {
 				if (msg.getPayload() != null) {
 					handleStatus((Buffer)msg.getPayload());
-				} else {
-					doc.appendPar("Ignored BUFFER_UPDATE with no payload from "+msg.getSource(), "gray"); // DEBUG
+				//} else {
+				//	doc.appendPar("Ignored BUFFER_UPDATE with no payload from "+msg.getSource(), "gray"); // DEBUG
 				}
 			} else if (msg.getType() == PolyMsgType.POLY_WORKING) {
 				// update prover status live.
@@ -414,19 +429,29 @@ public class StateViewDockable extends JPanel implements EBComponent {
 		} else if (message instanceof EditPaneUpdate) {
 			// query the mapping for all the latest information on this buffer
 			EditPaneUpdate msg = (EditPaneUpdate) message;
-			if (msg.getWhat() == EditPaneUpdate.BUFFER_CHANGED && Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_REFRESH_ON_BUFFER))) {
-				// process all previous status for this buffer.
-				doc.appendHTML("<hr/>");
-				doc.appendPar("Switching to "+msg.getEditPane().getBuffer()+".", "info");
-				scrollToBottom(false); // a bit redundant, but...
-				handleStatus(msg.getEditPane().getBuffer());
-				scrollToBottom(false);
-			} /*else {
-				doc.appendPar("Ignored EditPaneUpdate "+msg.getWhat()+" from "+msg.getSource()+".", "gray"); // DEBUG
-			}*/
-		} /*else {// everything else, for now.
-			doc.appendPar("(Ignored)", "gray"); // DEBUG
-		}*/
+			if (msg.getWhat() == EditPaneUpdate.BUFFER_CHANGED) {
+				if (jEdit.getProperty(PolyMLPlugin.PROPS_BUFFER_CHANGE).equals(PolyMLPlugin.PROPS_BUFFER_CHANGE_NOWT)) {
+					// do nothing
+				} else {
+					// process all previous status for this buffer, clearing or marking the new buffer as appropriate.
+					if (jEdit.getProperty(PolyMLPlugin.PROPS_BUFFER_CHANGE).equals(PolyMLPlugin.PROPS_BUFFER_CHANGE_CLEAR)) {
+						newDocument();
+					} else {
+						doc.appendHTML("<hr/>");
+						// doc.appendPar("Switching to "+msg.getEditPane().getBuffer()+".", "info"); // DEBUG
+						scrollToBottom(false); // a bit redundant, but...
+					}
+					handleStatus(msg.getEditPane().getBuffer());
+					scrollToBottom(false);
+				}
+				// experiment with adding markers, which are, sadly, probably not what we want.
+				// msg.getEditPane().getBuffer().addMarker('c', 10);
+		//	} else {
+		//		doc.appendPar("Ignored EditPaneUpdate "+msg.getWhat()+" from "+msg.getSource()+".", "gray"); // DEBUG
+			}
+		//} else {// everything else, for now.
+		//	doc.appendPar("(Ignored "+message+")", "gray"); // DEBUG
+		}
 	}
 
 

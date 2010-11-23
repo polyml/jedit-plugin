@@ -19,6 +19,7 @@
 package polyml;
 
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
@@ -45,7 +46,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 
 	private JCheckBox editableDocument;
 	private JCheckBox scrollOnOutput;
-	private JCheckBox refreshOnBuffer;
+	private JComboBox bufferChangeBehaviour;
 	
 	/**
 	 * Default constructor. Note that the name is important!
@@ -78,17 +79,19 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		scrollOnOutput.setToolTipText("Scroll to the bottom of the status document when output changes?");
 		addComponent(scrollOnOutput);
 		
-		refreshOnBuffer = new JCheckBox("Refresh error list on buffer change?",
-				Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_REFRESH_ON_BUFFER)));
-		refreshOnBuffer.setToolTipText("Append all relevant errors when a new buffer is viewed?");
-		addComponent(refreshOnBuffer);
+		bufferChangeBehaviour = new JComboBox(PolyMLPlugin.PROPS_BUFFER_CHANGE_OPTIONS);
+		bufferChangeBehaviour.setEditable(false);
+		bufferChangeBehaviour.setToolTipText("Desired status document behaviour on buffer change");
+		bufferChangeBehaviour.setSelectedItem(PolyMLPlugin.PROPS_BUFFER_CHANGE_CLEAR); // set default
+		bufferChangeBehaviour.setSelectedItem(jEdit.getProperty(PolyMLPlugin.PROPS_BUFFER_CHANGE));
+		addComponent("Buffer Change Behaviour", bufferChangeBehaviour);
 		
 		polyideCommand = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_POLY_IDE_COMMAND), 25);
 		polyideCommand.setToolTipText("Command to start PolyML for processing edited files.");
 		addComponent("PolyML IDE Command", polyideCommand);
 		
 		shellCommand = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_COMMAND), 25);
-		shellCommand.setToolTipText("Command to stary PolyML for interactive buffers.");
+		shellCommand.setToolTipText("Command to start PolyML for interactive buffers.");
 		addComponent("PolyML Shell Command", shellCommand);
 		
 		shellPrompt = new JTextField(jEdit.getProperty(PolyMLPlugin.PROPS_SHELL_PROMPT), 10);
@@ -113,7 +116,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE, cssFile.getText());
 		jEdit.setProperty(PolyMLPlugin.PROPS_STATE_DOC_EDITABLE, String.valueOf(editableDocument.isSelected()));
 		jEdit.setProperty(PolyMLPlugin.PROPS_SCROLL_ON_OUTPUT, String.valueOf(scrollOnOutput.isSelected()));
-		jEdit.setProperty(PolyMLPlugin.PROPS_REFRESH_ON_BUFFER, String.valueOf(refreshOnBuffer.isSelected()));
+		jEdit.setProperty(PolyMLPlugin.PROPS_BUFFER_CHANGE, String.valueOf(bufferChangeBehaviour.getSelectedItem()));
 		
 		if(!PolyMLPlugin.restartPolyML()) {
 			JOptionPane.showMessageDialog(null, "PolyML restart failed.", 
