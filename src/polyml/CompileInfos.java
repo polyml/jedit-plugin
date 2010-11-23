@@ -13,13 +13,15 @@ public class CompileInfos {
 	/**
 	 * from buffer location (used as internal ID) to parse ID
 	 */
-	Map<String, CompileRequest> locMap;
-	Map<String, CompileRequest> parseMap;
+	Map<String, CompileRequest> filenameToReq;
+	Map<String, CompileRequest> parseidToReq;
 	String lastRequestID;
 	
 	public CompileInfos(){
-		locMap = new Hashtable<String, CompileRequest>();
-		parseMap = new Hashtable<String, CompileRequest>();
+		// goes from filename to Compile Request for that filename
+		filenameToReq = new Hashtable<String, CompileRequest>();
+		// from parse id to the request (for looking up by parse id)
+		parseidToReq = new Hashtable<String, CompileRequest>();
 		lastRequestID = null;
 	}
 
@@ -37,18 +39,18 @@ public class CompileInfos {
 		// set last request ID
 		lastRequestID = requestID;
 		
-		CompileRequest cr = locMap.get(compileRequest.fileName);
+		CompileRequest cr = filenameToReq.get(compileRequest.fileName);
 		// first time this buffer/location has been parsed, add it to the locMap. 
 		
 		if(cr == null){
 			compileRequest.sentParseID = requestID;
-			locMap.put(compileRequest.fileName, compileRequest);
+			filenameToReq.put(compileRequest.fileName, compileRequest);
 			// add new entry for old compileRequest
-			parseMap.put(requestID, compileRequest);
+			parseidToReq.put(requestID, compileRequest);
 		} else {
 			cr.freshRequest(compileRequest, requestID);
 			// add new compile request to parse Map
-			parseMap.put(requestID, cr);
+			parseidToReq.put(requestID, cr);
 		}
 	}
 	
@@ -61,7 +63,7 @@ public class CompileInfos {
 		if(r.requestID.equals(lastRequestID)) {
 			lastRequestID = null;
 		}
-		CompileRequest cr = parseMap.get(r.requestID);
+		CompileRequest cr = parseidToReq.get(r.requestID);
 		if(cr == null){
 			System.err.println("compileCompleted: no known compile request for result: " + r.stringOfResult());
 			return null;
@@ -75,14 +77,14 @@ public class CompileInfos {
 			//System.err.println("cr.lastParseID: " + cr.lastParseID + "; cr.prevParseID: " + cr.prevParseID);
 			if(cr.sentParseID.equals(r.parseID)) {
 				if(cr.prevParseID != null) {
-					parseMap.remove(cr.prevParseID);
+					parseidToReq.remove(cr.prevParseID);
 				}
 				cr.prevParseID = cr.lastParseID;
 				cr.lastParseID = r.parseID;
 				//System.err.println("cr.lastParseID2: " + cr.lastParseID + "; cr.prevParseID2: " + cr.prevParseID);
 				
 			} else { // parse failed; so no other message will refer to requestID... fixme: resent request???
-				parseMap.remove(cr.sentParseID);
+				parseidToReq.remove(cr.sentParseID);
 			}
 			return cr;
 		}
@@ -90,19 +92,19 @@ public class CompileInfos {
 
 	/* */
 	public synchronized CompileRequest getFromPath(String path) {
-		return locMap.get(path);
+		return filenameToReq.get(path);
 	}
 	public synchronized CompileRequest getFromBuffer(Buffer buffer) {
 		return getFromPath(buffer.getPath());
 	}
 	
 	public synchronized CompileRequest getFromParseID(String pid) {
-		return parseMap.get(pid);
+		return parseidToReq.get(pid);
 	}
 
 	public synchronized void deleteAll() {
-		locMap.clear();
-		parseMap.clear();
+		filenameToReq.clear();
+		parseidToReq.clear();
 	}
 
 	/* */

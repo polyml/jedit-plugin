@@ -156,6 +156,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			// no longer compiling TODO: find a more appropriate place to put this
 			new PolyEBMessage(this, PolyMsgType.POLY_WORKING, false).send();
 			
+			// compile completed and here is the result
 			CompileRequest cr = compileInfos.compileCompleted(r);
 			// have to use strange long name because errorSOurce indexes by object not string.
 			
@@ -233,7 +234,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 								// TODO: add an error?
 								new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
 										fileName+":"+line+":"+line_offset+"--"+end_offset+":  ("+e.kind+") "+e.message).send();
-		
+								
 							} catch(java.lang.ArrayIndexOutOfBoundsException ex) {
 								ex.printStackTrace();
 							}
