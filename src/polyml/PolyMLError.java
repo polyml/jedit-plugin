@@ -2,10 +2,27 @@ package polyml;
 
 import java.util.Iterator;
 
+import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.jEdit;
+
+//enum PolyErrorKind {
+//	KIND_EXCEPTION('X', "Exception"),
+//	KIND_PRELUDE_FAILURE('L', "Heap loading failed:"),
+//	KIND_FATAL('E', "Error"),
+//	KIND_WARNING('W', "Warning");
+//	private char tag;
+//	private String desc;
+//	PolyErrorKind(char tag, String desc) { this.tag = tag; this.desc = desc; }
+//	public String toString() { return String.valueOf(tag); }
+//  public String description() { return this.desc; }
+//}
+
 /**
  * A PolyML error.
+ * So that logical and physical error positions can be connected in the editor
+ * this class only used through its implementation {@link ViewablePolyMLError}.  
  */
-public abstract class PolyMLError {
+public class PolyMLError extends FlexibleLocationInfo {
 	static char KIND_EXCEPTION = 'X';
 	static char KIND_PRELUDE_FAILURE = 'L';
 	static char KIND_FATAL = 'E';
@@ -28,23 +45,23 @@ public abstract class PolyMLError {
 	}
 	
 	/**
-	 * Static constructor for exception messages
+	 * Cconstructor for exception messages
 	 * @param startOffset
 	 * @param finalOffset
 	 * @param exception_message
 	 * @return
 	 */
-	static public PolyMLError newExceptionError(int startOffset, int finalOffset, String exception_message) {
-		return new ViewablePolyMLError(KIND_EXCEPTION, startOffset, finalOffset, exception_message);
+	public PolyMLError(int startOffset, int finalOffset, String exception_message) {
+		this(KIND_EXCEPTION, startOffset, finalOffset, exception_message);
 	}
 	
 	/**
-	 * Static constructor for prelude messages
+	 * Cconstructor for prelude messages
 	 * @param exception_message
 	 * @return
 	 */
-	static public PolyMLError newPreludeError(String exception_message) {
-		return new ViewablePolyMLError(KIND_PRELUDE_FAILURE, 0, 0, exception_message);
+	public PolyMLError(String exception_message) {
+		this(KIND_PRELUDE_FAILURE, 0, 0, exception_message);
 	}
 	
 	/**
@@ -117,6 +134,21 @@ public abstract class PolyMLError {
 	/** Returns the end position of the error. */
 	public int getEndPos() {
 		return endPos;
+	}
+	
+	/**
+	 * Utility method to associage all errors in a compileresult
+	 * with the given buffer.
+	 * @param b buffer
+	 * @param r the result whose errors we must associate.
+	 */
+	static void associateAllErrors(CompileResult r, String filename) {
+		Buffer b = jEdit.getBuffer(filename);
+		if (b != null && r != null) {
+			for (PolyMLError e : r.errors) {
+				e.associateWithBuffer(b);
+			}
+		}
 	}
 	
 }

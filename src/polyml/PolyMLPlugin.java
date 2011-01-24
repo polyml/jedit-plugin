@@ -54,7 +54,6 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	/** Associates Buffers to Processes that output to the buffer */
 	static Map<Buffer, ShellBuffer> shells;
-	static final BufferMLStatusMap compileMap = new BufferMLStatusMap();
 	
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
@@ -146,16 +145,15 @@ public class PolyMLPlugin extends EBPlugin {
 	}
 
 	/**
-	 * called when plugin is un-loaded/removed
+	 * Called when this plugin is un-loaded/removed.
+	 * This method should also remove anything listening on the EditBus.
 	 * @see EBPlugin#stop()
 	 */
 	public void stop() {
 		stopAllShellBuffers();
-		// could remove BufferMLStatusMap from EditBus here.
 		if (polyMLProcess != null) {
 			polyMLProcess.closeProcess();
 		}
-		BufferMLStatusMap.unregister();
 	}
 
 	/**
@@ -186,7 +184,7 @@ public class PolyMLPlugin extends EBPlugin {
 		// System.err.println("restarting polyml...");
 		try {
 			if (polyMLProcess == null) {
-				polyMLProcess = new PolyMLProcess(getPolyIDECmd(), compileMap);
+				polyMLProcess = new PolyMLProcess(getPolyIDECmd());
 			} else {
 				polyMLProcess.setCmd(getPolyIDECmd());
 			}
@@ -249,7 +247,9 @@ public class PolyMLPlugin extends EBPlugin {
 						}
 
 						// fire off compile message.
-						compileMap.setResultFor(b, null); // clear compile status (eventually necessary to clear errors, I suppose)
+						// TODO: let CompileInfos know that map is no longer valid,
+						//	was: compileMap.setResultFor(b, null); // clear compile status (eventually necessary to clear errors, I suppose)
+						
 						new PolyEBMessage(null, PolyMsgType.POLY_WORKING, true).send();
 						/* errorSource.removeFileErrors(b.getPath());
 						 * errorSource.addError(new DefaultErrorSource.DefaultError(

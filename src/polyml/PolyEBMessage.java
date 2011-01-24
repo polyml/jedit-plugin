@@ -10,18 +10,19 @@ import org.gjt.sp.jedit.EditBus;
 
 /**
  * Types of PolyEB message.  A bit less boilerplate than a type hierarchy.
+ * TODO: Message types to be rationalised and reduced!
  */
 enum PolyMsgType {
 	/* boolean; notifies of poly activity (or inactivity) */
 	POLY_WORKING,
-	/* notifies a state view that a buffer's status has been updated */
-	BUFFER_UPDATE,
-	/* returns a compile result object for storage */
+	/* Returns a compile REQUEST object, with result attached, for display. */
 	COMPILE_RESULT,
-	/* transient information / warning message. TODO: consider removal. */
+	/* transient information / warning message. */
 	INFORMATION,
-	/* TRANSITIONAL message type to replace errors.  TODO: remove this. */
-	TRANSITIONAL,
+	/* fragment of markup with location information */
+	POLY_LOCATION,
+	/* Transitional message, TODO: remove me! */
+	TRANSITIONAL;
 }
 
 /**
@@ -56,12 +57,16 @@ public class PolyEBMessage extends EBMessage {
 		payload = pkg;
 	}
 
+	/**
+	 * Gets the message type (not the payload type).
+	 * @return enumerate type
+	 */
 	public PolyMsgType getType() {
 		return typ;
 	}
 
 	/**
-	 * Gets object's payload.  I suppose we could do this 
+	 * Gets object's payload.  Type should be agreed beforehand!
 	 */
 	public Object getPayload() {
 		return payload;

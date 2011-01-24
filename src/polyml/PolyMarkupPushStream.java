@@ -13,10 +13,8 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 
 	CompileInfos compileInfos;
 	Object helloLock;
-	private BufferMLStatusMap compileMap;
 	
-	public PolyMarkupPushStream(BufferMLStatusMap map, CompileInfos compileInfos, Object helloLock) {
-		this.compileMap = map;
+	public PolyMarkupPushStream(CompileInfos compileInfos, Object helloLock) {
 		this.compileInfos = compileInfos;
 		this.helloLock = helloLock;
 	}
@@ -85,51 +83,14 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	 * @param l
 	 */
 	void noteLocation(FullLocationResponse l) {
-		CompileRequest cr = compileInfos.getFromParseID(l.parseID);
-		Buffer srcBuffer = jEdit.getBuffer(cr.fileName);
-		//Buffer srcBuffer = pInfo.editPane.getBuffer();
-		
 		synchronized (PolyMLPlugin.jEditGUILock) {
-			if(l.locGiven()) {
-				Buffer locBuffer = jEdit.getBuffer(l.filenameLoc);
-				if(locBuffer != null) {
-					int line = locBuffer.getLineOfOffset(l.startLoc);
-					int line_offset = l.startLoc - locBuffer.getLineStartOffset(line);
-					int end_line = locBuffer.getLineOfOffset(l.endLoc);
-					int end_offset = 0;
-					if (end_line == line) {
-						end_offset = l.endLoc - locBuffer.getLineStartOffset(end_line);
-					}
-					
-					new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-							locBuffer.getPath()+":"+line+":"+line_offset+"--"+end_offset+":  "+
-							"Location of: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ).send();
-				} else {
-					int line = srcBuffer.getLineOfOffset(l.start);
-					int line_offset = l.start - srcBuffer.getLineStartOffset(line);
-					int end_line = srcBuffer.getLineOfOffset(l.end);
-					int end_offset = 0;
-					if (end_line == line) {
-						end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
-					}
-					new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-							cr.fileName+":"+line+":"+line_offset+"--"+end_offset+":  "+"No such file: `" + l.filenameLoc + "` : " 
-							+ l.startLoc + ":" + l.endLoc).send();
-				}
-			} else {
-				int line = srcBuffer.getLineOfOffset(l.start);
-				int line_offset = l.start - srcBuffer.getLineStartOffset(line);
-				int end_line = srcBuffer.getLineOfOffset(l.end);
-				int end_offset = 0;
-				if (end_line == line) {
-					end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
-				}
-				
-				new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-						srcBuffer.getPath()+":"+line+":"+line_offset+"--"+end_offset+":  "+
-						"No declaration for: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ).send();
-			}
+			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
+			FlexibleLocationReponse flr = new FlexibleLocationReponse(l, cr);
+			// srcBuffer.getPath()+":"+line+":"+line_offset+"--"+end_offset+":  "+
+			// "No declaration for: `" + l.getSrcLocTextOfBuffer(srcBuffer) + "`" ).send();
+			new PolyEBMessage(this, PolyMsgType.POLY_LOCATION, flr);
 		}
+		
 	}
 	
 	
@@ -143,35 +104,38 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		//PolyMLPlugin.debugMessage(m.toPrettyString()); 
 		PolyMLPlugin.debugMessage("\n\n"); 
 		PolyMLPlugin.debugMessage(m.toXMLString());
-		PolyMLPlugin.debugMessage("\n\n"); 
+		PolyMLPlugin.debugMessage("\n\n");
+		
+		// no longer compiling TODO: find a more appropriate place to put this
+		new PolyEBMessage(this, PolyMsgType.POLY_WORKING, false).send();
+
 		// to make output buffer more readable; add new lines after each bit of markup is successfully added. 
 		if(m.kind == PolyMarkup.KIND_HELLO) {
 			//System.err.println("got hello!");
 			synchronized(helloLock) {
 				helloLock.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
+			
 		} else if(m.kind == PolyMarkup.KIND_COMPILE) {
 			// Parse the markup into a compile result
-			CompileResult r = new CompileResult(m);
-			// no longer compiling TODO: find a more appropriate place to put this
-			new PolyEBMessage(this, PolyMsgType.POLY_WORKING, false).send();
-			
+			CompileResult res = new CompileResult(m);
 			// compile completed and here is the result
-			CompileRequest cr = compileInfos.compileCompleted(r);
+			CompileRequest req = compileInfos.compileCompleted(res);
 			// have to use strange long name because errorSOurce indexes by object not string.
 			
-			synchronized(cr) {
-				cr.notifyAll(); // any threads waiting on compile to be completed can wake up
+			synchronized(req) {
+				req.notifyAll(); // any threads waiting on compile to be completed can wake up
 			}
+			new PolyEBMessage(this, PolyMsgType.COMPILE_RESULT, req).send();
+
 			
 			// now do the GUI stuff to display the errors...
 			//System.err.println("PolyMarkupPushStream.add: about to enter GUI lock");
-			synchronized (PolyMLPlugin.jEditGUILock) {
-				String fileName = cr.fileName;
-				//System.err.println("PolyMarkupPushStream.add: in GUI lock");
-
-				Buffer buffer = jEdit.getBuffer(cr.fileName);
-				compileMap.setResultFor(buffer, r); // TODO: put this somewhere better
+//			synchronized (PolyMLPlugin.jEditGUILock) {
+//				String fileName = req.fileName;
+//				//System.err.println("PolyMarkupPushStream.add: in GUI lock");
+//				Buffer buffer = jEdit.getBuffer(fileName);
+				//compileMap.setResultFor(buffer, r); // TODO: put this somewhere better
 				
 				// COMMENTED OUT: auto-open of compiled files: causes AWT thread lockup - I don't know why!?
 //				System.err.println("PolyMarkupPushStream.add: in GUI lock2");
@@ -198,51 +162,29 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 //				System.err.println("PolyMarkupPushStream.add: in GUI lock3");
 
 				// TODO: clear compilation status for "filename"?
-				// compileMap.setResultFor(fileName, null);
+				//compileMap.setResultFor(fileName, null);
 	
-//				(r.isBug() || buffer == null) 
-				if(r.isBug()) {
-					new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-							fileName+": "+"BUG: Failed to check, or have null buffer.").send();
-				} else {
-					// General Status: success/not success
-					
-					if(r.isSuccess()){
-						new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-								fileName+": "+"Compiled Successfully! (parse id: " + r.parseID + ")").send();
-					} else {
-						new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-								fileName+": "+"Compilation found errors of kind: " + r.status + " (parse id: " + r.parseID + ")").send();
-					}
-					
-					if(buffer != null) {
-						// can still have errors even is success: e.g. warnings. 
-						for (PolyMLError e : r.errors) {
-							
-							//System.err.println("PolyMarkupPushStream: error at: " + e.startPos + ":" + e.endPos);
-							//System.err.println("going thruogh the error list...");
-							
-							try {
-								int line = buffer.getLineOfOffset(e.startPos);
-								int line_offset = e.startPos - buffer.getLineStartOffset(line);
-								int end_line = buffer.getLineOfOffset(e.endPos);
-								int end_offset = 0;
-								if (end_line == line) {
-									end_offset = e.endPos - buffer.getLineStartOffset(end_line);
-								}
-							
-								// TODO: add an error?
-								new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-										fileName+":"+line+":"+line_offset+"--"+end_offset+":  ("+e.kind+") "+e.message).send();
-								
-							} catch(java.lang.ArrayIndexOutOfBoundsException ex) {
-								ex.printStackTrace();
-							}
-						} // for errors
-					}// if buffer != null
-				} // no bug
-			} // sync
-			System.err.println("PolyMarkupPushStream.add: out of GUI lock");
+//				if(res.isBug()) {
+//					new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
+//							fileName+": "+"BUG: Failed to check, or have null buffer.").send();
+//					new PolyEBMessage(this, PolyMsgType.COMPILE_RESULT, req).send();
+//				} else {
+//					
+//					// General Status: success/not success
+//					if(res.isSuccess()){
+//						new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
+//								fileName+": "+"Compiled Successfully! (parse id: " + res.parseID + ")").send();
+//						new PolyEBMessage(this, PolyMsgType.COMPILE_RESULT, req).send();
+//					} else {
+//						new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
+//								fileName+": "+"Compilation found errors of kind: " + res.status + " (parse id: " + res.parseID + ")").send();
+//						new PolyEBMessage(this, PolyMsgType.COMPILE_RESULT, req).send();
+//					}
+//				} // no bug
+//				new PolyEBMessage(this, PolyMsgType.COMPILE_RESULT, req).send();
+//			} // sync
+//			System.err.println("PolyMarkupPushStream.add: out of GUI lock");
+			
 		} else if(m.kind == PolyMarkup.KIND_PROPERTIES) {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest lastCompile = compileInfos.getFromParseID(l.parseID);
@@ -255,31 +197,30 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			if(b.getPath().equals(lastCompile.fileName)) {
 				a.setSelection(new Selection.Range(l.start,l.end));
 			}
+			
+			
 		} else if(m.kind == PolyMarkup.KIND_TYPE_INFO) {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
+			// No need for this since the position will be a one-off, I guess.
+			// Ultimately it might be nice to cache these.  However... in the
+			// meantime it is useful to use these objects to calculate lines, etc.
+			FlexibleLocationReponse fl = new FlexibleLocationReponse(l, cr);
 			
 			if(jEdit.getActiveView().getBuffer().getPath().equals(cr.fileName)) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
-				Buffer srcBuffer = jEdit.getBuffer(cr.fileName); 
-				// jEdit.getActiveView().getBuffer();
-				int line = srcBuffer.getLineOfOffset(l.start);
-				int line_offset = l.start - srcBuffer.getLineStartOffset(line);
-				int end_line = srcBuffer.getLineOfOffset(l.end);
-				int end_offset = 0;
-				if (end_line == line) {
-					end_offset = l.end - srcBuffer.getLineStartOffset(end_line);
-				}
+				Buffer srcBuffer = jEdit.getBuffer(cr.fileName);
 				
 				synchronized (PolyMLPlugin.jEditGUILock) { // hack; should be in error src
+					// TODO: add this information to the relevant CompileResult.
 					if(l.markup.hasNext()) {
 						String type_string = l.markup.next().getContent();
-						new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-								srcBuffer.getPath()+":"+line+":"+line_offset+"--"+end_offset+":  "+
+						new PolyEBMessage(this, PolyMsgType.INFORMATION,
+								srcBuffer.getPath()+":"+fl.getLineNumber()+":"+fl.getLineOffset()+"--"+fl.getEndLineOffset()+":  "+
 								"`" + type_string + "` is the type of: `"+ l.getSrcLocTextOfBuffer(srcBuffer) + "`").send();
 					} else {
-						new PolyEBMessage(this, PolyMsgType.TRANSITIONAL, 
-								srcBuffer.getPath()+":"+line+":"+line_offset+"--"+end_offset+":  "+
+						new PolyEBMessage(this, PolyMsgType.INFORMATION, 
+								srcBuffer.getPath()+":"+fl.getLineNumber()+":"+fl.getLineOffset()+"--"+fl.getEndLineOffset()+":  "+
 								"Not a value, so no type: `"+ l.getSrcLocTextOfBuffer(srcBuffer) + "`").send();
 					}
 				}
@@ -292,6 +233,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			FullLocationResponse l = new FullLocationResponse(m);
 			noteLocation(l);
 		} 
+		
 		// movement responses (all the same)
 		else if(m.kind == PolyMarkup.KIND_MOVE) {
 			LocationResponse l = new LocationResponse(m);
@@ -299,10 +241,10 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 			}
+			
 		} else {
 			System.err.println("Unkown message kind ignored: " + m.kind);
 		}
-		
 		System.err.println("PolyMarkupPushStream.add: end.");
 	}
 
@@ -311,6 +253,5 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	public void close() { 
 		// nothing special to do 
 	}
-		
 }
 

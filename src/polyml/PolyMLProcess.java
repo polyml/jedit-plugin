@@ -54,14 +54,12 @@ public class PolyMLProcess {
 	
 	// running
 	volatile boolean mRunningQ;
-	private BufferMLStatusMap compileMap;
 
 	// -
-	public PolyMLProcess(List<String> cmd, BufferMLStatusMap map) throws IOException {
+	public PolyMLProcess(List<String> cmd) throws IOException {
 		super();
 		msgID = 0;
 		mRunningQ = false;
-		compileMap = map;
 		ideHeapFile = null;
 		process = null;
 		writer = null;
@@ -74,11 +72,10 @@ public class PolyMLProcess {
 	}
 
 	// -
-	public PolyMLProcess(BufferMLStatusMap map) throws IOException {
+	public PolyMLProcess() throws IOException {
 		super();
 		msgID = 0;
 		mRunningQ = false;
-		compileMap = map;
 		ideHeapFile = null;
 		process = null;
 		writer = null;
@@ -252,7 +249,7 @@ public class PolyMLProcess {
 			writer = new DataOutputStream(process.getOutputStream());
 
 			Object helloLock = new Object();
-			errorPushStream = new PolyMarkupPushStream(compileMap, compileInfos, helloLock);
+			errorPushStream = new PolyMarkupPushStream(compileInfos, helloLock);
 
 			// setup and start listening thread.
 			polyListener = new InputStreamThread(reader,
@@ -417,7 +414,7 @@ public class PolyMLProcess {
 	}
 	
 	public synchronized void sendCancelLastCompile() {
-		String lastRequestID = compileInfos.getLastCompileRequestID();
+		String lastRequestID = compileInfos.getLastRequestID();
 		if(lastRequestID != null) {
 			sendCancelCompile(lastRequestID);
 		}
@@ -435,7 +432,7 @@ public class PolyMLProcess {
 	 */
 	synchronized void sendCompileRequest(String requestid, CompileRequest compileRequest) {		
 		
-		String lastRequestID = compileInfos.getLastCompileRequestID();
+		String lastRequestID = compileInfos.getLastRequestID();
 		if(lastRequestID != null) {
 			//System.err.println("sending cancel compile.");
 			sendCancelCompile(lastRequestID);
@@ -528,9 +525,7 @@ public class PolyMLProcess {
 			 * errorSource.addError(new DefaultErrorSource.DefaultError(errorSource,
 			 * 		ErrorSource.ERROR, b.getPath(), 0, 0, 0, "No IDE heap file :( "));
 			 */
-			compileMap.setResultFor(b, null);
 			new PolyEBMessage(this, PolyMsgType.INFORMATION, "No IDE heap file :( ").send();
-			
 			return;
 		}
 		

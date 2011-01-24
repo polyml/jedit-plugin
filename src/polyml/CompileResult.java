@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.gjt.sp.jedit.textarea.Selection;
+
 public class CompileResult {
 	static char STATUS_SUCCESS = 'S';
 	static char STATUS_PRELUDE_FAILED = 'L';
@@ -11,6 +13,7 @@ public class CompileResult {
 	static char STATUS_TYPECHECK_FAILED = 'F';
 	static char STATUS_EXCEPTION_RAISED = 'X';
 	static char STATUS_CANCEL = 'C';
+	/** dummy Compile Result for bugs. */
 	static char STATUS_BUG = 'B';
 	
 	char status;
@@ -28,7 +31,9 @@ public class CompileResult {
 		parseID = pid;
 	}
 	
-	// dummy Compile Result for bugs. 
+	/** 
+	 * Checks if the compile result is set to {@link #STATUS_BUG}...
+	 */
 	public boolean isBug() {
 		return status == STATUS_BUG;
 	}
@@ -82,7 +87,7 @@ public class CompileResult {
 					finalMarkup.recChangeLocationFieldsToHTML();
 					finalMarkup.recFlattenDefaultFieldsToContent();
 					String error_reason = finalMarkup.getContent();
-					errors.add(PolyMLError.newPreludeError(error_reason));
+					errors.add(new PolyMLError(error_reason));
 				} else if(finalMarkup.getSubs() != null){
 					
 					Iterator<PolyMarkup> i2;
@@ -100,7 +105,7 @@ public class CompileResult {
 							System.err.println("null exception message; m: " + m.toXMLString() 
 									+ "\n m2:" + m2.toXMLString());
 						} else {
-							errors.add(PolyMLError.newExceptionError(finalOffset, finalOffset, "Exception raised: " + exception_message));
+							errors.add(new PolyMLError(finalOffset, finalOffset, "Exception raised: " + exception_message));
 						}
 					}
 					
@@ -109,7 +114,7 @@ public class CompileResult {
 						PolyMarkup m2 = i2.next();
 						if (m2.getKind() == 'E') {
 							try {
-								errors.add(new ViewablePolyMLError(m2));
+								errors.add(new PolyMLError(m2));
 							} catch(java.lang.NumberFormatException e) {
 								System.err.print("Cannot create error, bad markup: \n" 
 										+ m2.toXMLString());
@@ -134,6 +139,26 @@ public class CompileResult {
 			finalOffset = 0;
 		}
 	}
+	
+	/**
+	 * Returns the actual location of the given error locations on the current
+	 * buffer, or a new selection matching those criteria if it does not exist. 
+	 * @param start original start offset
+	 * @param end original end offset
+	 * @return a selection representing the flexible location of the offsets,
+	 * 			the exact given parameters if not found
+	 */
+	public Selection getRealPositionOf(int start, int end) {
+		for (PolyMLError ve : errors) {
+			System.err.println("Looking in error "+ve.stringOfError());
+			if (ve.startPos == start && ve.endPos == end) {
+				return new Selection.Range(ve.getStartPos(), ve.getEndPos());
+			}
+		}
+		System.err.println("No matching position was stored.");
+		return new Selection.Range(start, end);
+	}
+	
 
 	public String stringOfResult() {
 		String s, statusString, finalOffsetString;

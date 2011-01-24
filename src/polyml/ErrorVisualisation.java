@@ -8,7 +8,6 @@ import java.util.Map;
 
 import javax.swing.ImageIcon;
 
-import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
@@ -57,15 +56,14 @@ public abstract class ErrorVisualisation extends TextAreaExtension {
 	 * @return information for the current buffer, or an empty list if none.
 	 */
 	protected List<PolyMLError> getBufferInfo() {
-		List<PolyMLError> list = new ArrayList<PolyMLError>(0);
-		if (editPane != null && editPane.getBuffer() != null) {
-			BufferMLStatusMap map = PolyMLPlugin.compileMap;
-			Buffer b = editPane.getBuffer();
-			if (map.buffers.containsKey(b) && map.getResultFor(b) != null) {
-				return map.getResultFor(b).errors;
-			}
+		try {
+			String path = editPane.getBuffer().getPath();
+			CompileRequest rq = PolyMLPlugin.polyMLProcess.compileInfos.getFromPath(path);
+			CompileResult rs = rq.getResult();
+			return rs.errors;
+		} catch (NullPointerException e) {
+			return new ArrayList<PolyMLError>(0);
 		}
-		return list;
 	}
 	
 	/**

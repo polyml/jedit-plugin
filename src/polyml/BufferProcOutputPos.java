@@ -8,7 +8,6 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
 /**
  * Manages a position in a buffer that gets moved when stuff is inserted or
  * removed before that position. 
- * @deprecated in favour of jEdit's Position objects.
  * @author ldixon
  */
 public class BufferProcOutputPos extends BufferChangeAdapter implements BufferListener {
@@ -200,26 +199,26 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	}
 
 	public void foldHandlerChanged(JEditBuffer buffer) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 
 	}
 
 	public void foldLevelChanged(JEditBuffer buffer, int startLine, int endLine) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 
 	}
 
 	public void preContentInserted(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 
 	}
 
 	public void preContentRemoved(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 
 	}
 
 	public void transactionComplete(JEditBuffer buffer) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 	}	
 }

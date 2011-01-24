@@ -3,6 +3,7 @@ package polyml;
 import javax.swing.JPanel;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Rectangle;
@@ -35,8 +36,7 @@ import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.Selection.Range;
 
-
-/*
+/**
  * Dockable window with rendered state output
  *
  * @author Lucas Dixon
@@ -112,6 +112,8 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	
 	/** add prover state view, a special button with class access */
 	private NamedAction stateButton = new NamedAction("(ML Status)", "PolyML status - activity not yet detected") {
+		private Color running = new Color(200, 180, 180, 255);
+		private Color idle = new Color(0, 50, 0, 35);
 		public void actionPerformed(ActionEvent e) {
 			PolyMLPlugin.sendCancelToPolyML();
 		}
@@ -119,9 +121,11 @@ public class StateViewDockable extends JPanel implements EBComponent {
 			AbstractButton btn = getButton();
 			if (b) {
 				btn.setText("ML: Running");
+				btn.setBackground(running);
 				btn.setToolTipText("Click to cancel current PolyML execution");
 			} else {
 				btn.setText("ML: Idle");
+				btn.setBackground(idle);
 				btn.setToolTipText("PolyML is not currently processing a buffer");
 			}
 			btn.setEnabled(b);
@@ -153,21 +157,24 @@ public class StateViewDockable extends JPanel implements EBComponent {
 		}},
 		new NamedAction("Print All Status", "Dumps all status messages into the status buffer") {
 			public void actionPerformed(ActionEvent e) {
-				for (Buffer b : PolyMLPlugin.compileMap.getBuffers()) {
-					displayResultFor(b);
+				for (CompileResult r : PolyMLPlugin.polyMLProcess.compileInfos.getResults()) {
+					displayResult(r);
 				}
+				//for (Buffer b : PolyMLPlugin.compileMap.getBuffers()) {
+				//	displayResultFor(b);
+				//}
 		}},	
 		separator,
 		stateButton // defined above.
 	};
 	
-
 	/**
 	 * Convenience method for dockable launching purposes.
 	 * @param view the view into which to provide this dockable
 	 * @throws InstantiationException 
 	 */
 	public StateViewDockable(View view) throws InstantiationException {
+		
 		this(view, "default");
 	}
 	
@@ -300,25 +307,31 @@ public class StateViewDockable extends JPanel implements EBComponent {
 				}
 			});
 		}
-		
 	}
 	
 	/**
 	 * Appends all errors relating to the given buffer, to the document
 	 * Appends a warning if no result is available
+	 * @param path the path
+	 */
+	public void displayResultFor(String path) {
+		try {
+			CompileRequest q = PolyMLPlugin.polyMLProcess.compileInfos.getFromPath(path);
+			CompileResult r = q.getResult();
+			doc.appendPar("Status for "+path, "info");
+			displayResult(r);
+		} catch (NullPointerException e) {
+			doc.appendPar("No Status for file "+(path==null?"(null)":path)+".", PolyMLError.KIND_WARNING);
+			scrollToBottom(false);
+		}
+	}
+	
+	/**
+	 * @see #displayResultFor(Buffer)
 	 * @param b the buffer
 	 */
 	public void displayResultFor(Buffer b) {
-		CompileResult r = PolyMLPlugin.compileMap.getResultFor(b);
-		if (r == null) {
-			doc.appendPar("No Status for buffer "+(b==null?"(null)":b.getName())+".", PolyMLError.KIND_WARNING);
-			scrollToBottom(false);
-		} else {
-			if (b != null) {
-				doc.appendPar("Status for "+(b==null?"(null)":b.getName()), "info");
-			}
-			displayResult(r);
-		}
+		displayResultFor(b.getPath());
 	}
 	
 	/**
@@ -345,9 +358,10 @@ public class StateViewDockable extends JPanel implements EBComponent {
 		return props;
 	}
 	
-	/**
+	/*
 	 * Returns a property map with properties sufficient to open the file
-	 * specified by the error given.
+	 * specified by the given error.
+	 * @deprecated
 	 *
 	public boolean openBufferForError(Error e) {
 		//Map<String, Object> props = new HashMap<String,Object>();
@@ -368,24 +382,6 @@ public class StateViewDockable extends JPanel implements EBComponent {
 		newBuffer.setProperty(Buffer.SELECTION, new Range(e.getStartOffset(), e.getEndOffset()));		
 		return true;
 	}*/
-	
-	/**
-	 * Outputs status for a given buffer by retrieving it from the compileMap.
-	 * If the given buffer is not the current one, notes the update without displaying it.
-	 * NOTE two buffers displaying the same file are _not_ the same buffer; this might
-	 *      result in some confusing error messages to be appended(!)
-	 * @param buffer
-	 */
-	private void handleStatus(Buffer buffer) {
-		//doc.appendPar("Status update for "+buffer, "info");
-		if (buffer == null) {
-			doc.appendPar("No compilation status for buffer.", "gray");
-		} else if (buffer.equals(view.getBuffer())) {
-			displayResultFor(buffer);
-		} else {
-			doc.appendPar("Buffer update message for other buffer "+buffer.getPath()+" received.", "gray");
-		}
-	}
 
 	/**
 	 * Catches errors passed on to the error bus for appending.
@@ -394,15 +390,15 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	public void handleMessage(EBMessage message) {
 		doc.appendPar("MSG["+message.toString()+"]", "debug"); // DEBUG
 		 
-	
 		// check for buffer update notifications, which will trigger a reload.
 		if (message instanceof PolyEBMessage) {
 			PolyEBMessage msg = (PolyEBMessage) message;
-			if (msg.getType() == PolyMsgType.BUFFER_UPDATE) {
-				if (msg.getPayload() != null) {
-					handleStatus((Buffer)msg.getPayload());
-				//} else {
-				//	doc.appendPar("Ignored BUFFER_UPDATE with no payload from "+msg.getSource(), "gray"); // DEBUG
+			if (msg.getType() == PolyMsgType.COMPILE_RESULT) {
+				try {
+					CompileRequest req = (CompileRequest) msg.getPayload();
+					displayResult(req.getResult());
+				} catch (NullPointerException e) {
+					doc.appendPar("Ignored BUFFER_UPDATE with no payload from "+msg.getSource(), "gray");
 				}
 			} else if (msg.getType() == PolyMsgType.POLY_WORKING) {
 				// update prover status live.
@@ -441,7 +437,14 @@ public class StateViewDockable extends JPanel implements EBComponent {
 						// doc.appendPar("Switching to "+msg.getEditPane().getBuffer()+".", "info"); // DEBUG
 						scrollToBottom(false); // a bit redundant, but...
 					}
-					handleStatus(msg.getEditPane().getBuffer());
+					Buffer buffer = msg.getEditPane().getBuffer();
+					if (buffer.equals(view.getBuffer())) {
+						displayResultFor(buffer);
+					} else if (buffer.getPath() != null) {
+						doc.appendPar("Buffer update message for other buffer "+buffer.getPath()+" received.", "gray");
+					} else {
+						doc.appendPar("Buffer update message for null buffer received.", "gray");
+					}
 					scrollToBottom(false);
 				}
 				// experiment with adding markers, which are, sadly, probably not what we want.
