@@ -11,7 +11,7 @@ import org.gjt.sp.jedit.textarea.TextAreaExtension;
 
 // UNUSED; maybe want it for more elaborate PolyML GUI stuff
 public class ExpressionHighlight extends TextAreaExtension {
-	private TextArea mTextArea;
+	private final TextArea mTextArea;
 	boolean mShow;
 	TextRange mRange;
 	

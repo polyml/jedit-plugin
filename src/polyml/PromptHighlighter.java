@@ -16,8 +16,6 @@ public class PromptHighlighter extends TextAreaExtension {
 	
 	/**
 	 * Assume that pos.buffer = t.buffer! Because pos is for ShellBuffer of this buffer
-	 * @param mPos
-	 * @param t
 	 */
 	public PromptHighlighter(BufferProcOutputPos p, TextArea t) {
 		super();
@@ -62,10 +60,7 @@ public class PromptHighlighter extends TextAreaExtension {
 	 * If start is on an earlier line, gives start of line, and if end 
 	 * is on a later line, givens end of line. 
 	 * 
-	 * @param screenLine
-	 * @param start
-	 * @param end
-	 * @return array of size 2, with x1 and x2 positions. 
+	 * @return array of size 2, with x1 and x2 positions.
 	 */
 	int[] getOffsets(int screenLine, int start, int end)
 	{

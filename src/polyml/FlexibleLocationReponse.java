@@ -10,7 +10,7 @@ public class FlexibleLocationReponse extends FlexibleLocationInfo {
 
 	/**
 	 * Create a flexible location object from a location response.
-	 * @param r the location response.
+	 * @param l the location response.
 	 * @param cr optional fallback compilerequest, for filename determination.
 	 */
 	public FlexibleLocationReponse(FullLocationResponse l, CompileRequest cr) {

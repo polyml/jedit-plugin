@@ -1,7 +1,6 @@
 package polyml;
  
 import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.buffer.BufferChangeAdapter;
 import org.gjt.sp.jedit.buffer.BufferListener;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 
@@ -10,7 +9,7 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  * removed before that position. 
  * @author ldixon
  */
-public class BufferProcOutputPos extends BufferChangeAdapter implements BufferListener {
+public class BufferProcOutputPos implements BufferListener {
 	private int mPrePromptPos;
 	private int mPostPromptPos;
 	JEditBuffer mBuffer;
@@ -57,7 +56,6 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	
 	/** 
 	 * Move prompt forward
-	 * @param i
 	 */
 	public synchronized void movePosFwd(int i) {
 		//setPostPromptPos(mPostPromptPos + i);
@@ -69,7 +67,6 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	 * ensures that pos is within the buffer, 
 	 * and if buffer length is greater than 0, then it's at least 
 	 * one character before the last one. 
-	 * @param pos
 	 */
 	public synchronized void setPrePromptPos(int pos) {
 		mShellBuffer.invalidateTextAreas();
@@ -165,13 +162,15 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	//void dbgMsg(String s) { 
 	//System.err.println("BufferEditor:" + s);
 	//}
-	
+
+	@Override
 	public synchronized void bufferLoaded(JEditBuffer buffer) {
 		mBuffer = buffer;
 		setPrePromptPos(mBuffer.getLength());
 	}
 
 	/** Update the process position marker when stuff is added to the buffer. */
+	@Override
 	public synchronized void contentInserted(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
 		/* if a process is sending output, then it's always to the left of getPos() so we should always 
 		 * update the pos; otherwise only do it if it's user input before the current pos; */
@@ -181,6 +180,7 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 	}
 
 	/** move mPos back if cut after it and overlaps with it. Else move it appropriately. */
+	@Override
 	public synchronized void contentRemoved(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
 		// removal includes current position; so need to adjust it
 		if(offset < mPostPromptPos){
@@ -198,26 +198,31 @@ public class BufferProcOutputPos extends BufferChangeAdapter implements BufferLi
 		//System.err.println("content removed, offset: " + offset + "; len " + length + "; newpos" + mPrePromptPos);
 	}
 
+	@Override
 	public void foldHandlerChanged(JEditBuffer buffer) {
 		// Auto-generated method stub
 
 	}
 
+	@Override
 	public void foldLevelChanged(JEditBuffer buffer, int startLine, int endLine) {
 		// Auto-generated method stub
 
 	}
 
+	@Override
 	public void preContentInserted(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
 		// Auto-generated method stub
 
 	}
 
+	@Override
 	public void preContentRemoved(JEditBuffer buffer, int startLine, int offset, int numLines, int length) {
 		// Auto-generated method stub
 
 	}
 
+	@Override
 	public void transactionComplete(JEditBuffer buffer) {
 		// Auto-generated method stub
 	}	

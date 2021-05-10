@@ -20,7 +20,6 @@ import org.gjt.sp.jedit.jEdit;
 /**
  * A PolyML error.
  * So that logical and physical error positions can be connected in the editor
- * this class only used through its implementation {@link ViewablePolyMLError}.  
  */
 public class PolyMLError extends FlexibleLocationInfo {
 	static char KIND_EXCEPTION = 'X';
@@ -45,20 +44,14 @@ public class PolyMLError extends FlexibleLocationInfo {
 	}
 	
 	/**
-	 * Cconstructor for exception messages
-	 * @param startOffset
-	 * @param finalOffset
-	 * @param exception_message
-	 * @return
+	 * Constructor for exception messages
 	 */
 	public PolyMLError(int startOffset, int finalOffset, String exception_message) {
 		this(KIND_EXCEPTION, startOffset, finalOffset, exception_message);
 	}
 	
 	/**
-	 * Cconstructor for prelude messages
-	 * @param exception_message
-	 * @return
+	 * Constructor for prelude messages
 	 */
 	public PolyMLError(String exception_message) {
 		this(KIND_PRELUDE_FAILURE, 0, 0, exception_message);
@@ -66,8 +59,6 @@ public class PolyMLError extends FlexibleLocationInfo {
 	
 	/**
 	 * Generic constructor for ML Markup messages
-	 * @param m
-	 * @throws MarkupException
 	 */
 	public PolyMLError(PolyMarkup m) throws MarkupException{
 		Iterator<PolyMarkup> i = m.getSubs().iterator();
@@ -139,7 +130,6 @@ public class PolyMLError extends FlexibleLocationInfo {
 	/**
 	 * Utility method to associage all errors in a compileresult
 	 * with the given buffer.
-	 * @param b buffer
 	 * @param r the result whose errors we must associate.
 	 */
 	static void associateAllErrors(CompileResult r, String filename) {

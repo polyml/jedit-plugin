@@ -9,7 +9,7 @@ import pushstream.PushStream;
 
 /**
  * Represents PolyML IDE Markup elements.
- * @see http://www.polyml.org/docs/IDEProtocol.html for details.
+ * See http://www.polyml.org/docs/IDEProtocol.html for details.
  * 
  * The idea is that this is a polymorphic tagged n-ary tree.
  * Each node has a kind, which may be null. null nodes have content, all 
@@ -131,12 +131,12 @@ public class PolyMarkup implements PushStream<Character> {
 	}
 	
 	public void addToContent(char c) {
-		if(content == null) {content = new String();}
+		if(content == null) {content = "";}
 		content += c;
 	}
 	
 	public void addToFields(PolyMarkup f) {
-		if(fields == null) {fields = new LinkedList<PolyMarkup>(); }
+		if(fields == null) {fields = new LinkedList<>(); }
 		fields.add(f);
 	}
 	
@@ -161,7 +161,7 @@ public class PolyMarkup implements PushStream<Character> {
 		PolyMarkup parent = new PolyMarkup(kind,fields);
 		parents.addFirst(parent);
 		fields = null;
-		kind = new Character(c);
+		kind = c;
 		//System.err.println("new inside: " + kind + "; parent was: " + parent.kind);
 		status = STATUS_INSIDE;
 	}
@@ -171,7 +171,7 @@ public class PolyMarkup implements PushStream<Character> {
 		//System.err.println("closing: " + kind);
 		PolyMarkup cur;
 		if(fields == null) {
-			if(content == null) { content = new String(); }
+			if(content == null) { content = ""; }
 			cur = new PolyMarkup(kind,content);
 		} else {
 			if(content != null) {
@@ -209,8 +209,8 @@ public class PolyMarkup implements PushStream<Character> {
 
 		if(status == STATUS_OUTSIDE_ESC) {
 			if(c >= 'A' && c <= 'Z') { // new tag, markup started!
-				parents = new LinkedList<PolyMarkup>();
-				kind = new Character(c);
+				parents = new LinkedList<>();
+				kind = c;
 				status = STATUS_INSIDE;
 				fields = null;
 				content = null;
@@ -240,7 +240,7 @@ public class PolyMarkup implements PushStream<Character> {
 				}
 			} else if( c == ',') {
 				// if content of last field is null, make it empty string. 
-				if(content == null) { content = new String(); }
+				if(content == null) { content = ""; }
 				addToFields(new PolyMarkup(null,content));
 				content = null;
 				status = STATUS_INSIDE;
@@ -271,7 +271,7 @@ public class PolyMarkup implements PushStream<Character> {
 				PolyMarkup substuff = i.next();
 				substuff.recChangeLocationFieldsToHTML();
 				
-				fields = new LinkedList<PolyMarkup>();
+				fields = new LinkedList<>();
 				
 				fields.add(new PolyMarkup(null,"<a href='pmjp://" + filename + "?line=" + startline + 
 						"&start=" + startloc + "&end=" + endloc + "'>"));
@@ -294,7 +294,7 @@ public class PolyMarkup implements PushStream<Character> {
 	 * flatten all recursive fields to XML markup. 
 	 * */
 	public void recFlattenAllFieldsToContent() {
-		if(content == null) { content = new String(); }
+		if(content == null) { content = ""; }
 		if(fields != null) {
 			String tag = null;
 			Iterator<PolyMarkup> i = fields.iterator();
@@ -321,11 +321,9 @@ public class PolyMarkup implements PushStream<Character> {
 	 * don't worry about this fields kind, recursively flatten everything else 
 	 * */
 	public void recFlattenAllSubFieldsToContent() {
-		if(content == null) { content = new String(); }
+		if(content == null) { content = ""; }
 		if(fields != null) {
-			Iterator<PolyMarkup> i = fields.iterator();
-			while(i.hasNext()) {
-				PolyMarkup m2 = i.next();
+			for (PolyMarkup m2 : fields) {
 				m2.recFlattenAllFieldsToContent();
 				content += m2.getContent();
 			}
@@ -368,16 +366,17 @@ public class PolyMarkup implements PushStream<Character> {
 	 * recreate the input from PolyML that would produce this markup
 	 */
 	public String toString() {
-		String body = new String();
+		String body = "";
 		boolean hasPrev = false;
-		Character k; 
+		char k;
 		if(kind == null) {k = '_'; } else {k = kind;}
 		if(content != null) { body += content; hasPrev = true; }
-		if(fields != null) { 
-			Iterator<PolyMarkup> i = fields.iterator();
-			while(i.hasNext()) {
-				if(hasPrev){ body += (ESC + ",");} 
-				body += i.next().toString();
+		if(fields != null) {
+			for (PolyMarkup field : fields) {
+				if (hasPrev) {
+					body += (ESC + ",");
+				}
+				body += field.toString();
 				hasPrev = true;
 			}
 		}
@@ -390,14 +389,15 @@ public class PolyMarkup implements PushStream<Character> {
 	 * come from PolyML (for debugging, easier to read than toString)
 	 */
 	public String toPrettyString() {
-		String body = new String();
+		String body = "";
 		boolean hasPrev = false;
 		if(content != null) { body += content; hasPrev = true; }
-		if(fields != null) { 
-			Iterator<PolyMarkup> i = fields.iterator();
-			while(i.hasNext()) {
-				if(hasPrev){ body += ("`,");} 
-				body += i.next().toPrettyString();
+		if(fields != null) {
+			for (PolyMarkup field : fields) {
+				if (hasPrev) {
+					body += ("`,");
+				}
+				body += field.toPrettyString();
 				hasPrev = true;
 			}
 		}
@@ -420,7 +420,7 @@ public class PolyMarkup implements PushStream<Character> {
 	 * internal data structure. (mostly for debugging)
 	 */
 	public String toXMLString() {
-		String body = new String();
+		String body = "";
 		//boolean hasPrev = false;
 		
 		if(content != null) {
@@ -428,10 +428,9 @@ public class PolyMarkup implements PushStream<Character> {
 		}
 		if(fields != null) { 
 			body += "\n<f>";
-			Iterator<PolyMarkup> i = fields.iterator();
-			while(i.hasNext()) {
-				// if(hasPrev){ body += ("<POLYML_NEXT/>\n");} 
-				body += i.next().toXMLString();
+			for (PolyMarkup field : fields) {
+				// if(hasPrev){ body += ("<POLYML_NEXT/>\n");}
+				body += field.toXMLString();
 				//hasPrev = true;
 			}
 			body += "\n</f>";

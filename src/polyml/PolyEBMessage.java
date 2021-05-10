@@ -1,6 +1,3 @@
-/**
- * 
- */
 package polyml;
 
 import javax.swing.SwingUtilities;
@@ -22,7 +19,7 @@ enum PolyMsgType {
 	/* fragment of markup with location information */
 	POLY_LOCATION,
 	/* Transitional message, TODO: remove me! */
-	TRANSITIONAL;
+	TRANSITIONAL
 }
 
 /**
@@ -74,11 +71,7 @@ public class PolyEBMessage extends EBMessage {
 
 	/** Generates and sends the error in a background thread. */
 	public void send() {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				EditBus.send(me);
-			}
-		});
+		SwingUtilities.invokeLater(() -> EditBus.send(me));
 	}
 	
 	/**

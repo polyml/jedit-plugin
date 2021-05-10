@@ -64,7 +64,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	/**
 	 * A simple HyperlinkListener which causes mouseover cursor effects.
 	 */
-	class HoverListener implements HyperlinkListener {
+	static class HoverListener implements HyperlinkListener {
 		final JEditorPane pane;
 		HoverListener(final JEditorPane pane) {
 			this.pane = pane;
@@ -86,7 +86,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 */
 	interface ButtonedAction extends Action {
 		/** Returns a button associated with this action. */
-		public AbstractButton getButton();
+		AbstractButton getButton();
 	}
 	
 	/** Friendly name for separators */
@@ -95,7 +95,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	/**
 	 * Convenient implementation of an Action which sets name properties in advance.
 	 */
-	abstract class NamedAction extends AbstractAction implements ButtonedAction {		
+	abstract static class NamedAction extends AbstractAction implements ButtonedAction {
 		JButton btn;
 		public NamedAction(String myname, String mytip) {
 			putValue(NAME, myname);
@@ -111,9 +111,9 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	}
 	
 	/** add prover state view, a special button with class access */
-	private NamedAction stateButton = new NamedAction("(ML Status)", "PolyML status - activity not yet detected") {
-		private Color running = new Color(200, 180, 180, 255);
-		private Color idle = new Color(0, 50, 0, 35);
+	private final NamedAction stateButton = new NamedAction("(ML Status)", "PolyML status - activity not yet detected") {
+		private final Color running = new Color(200, 180, 180, 255);
+		private final Color idle = new Color(0, 50, 0, 35);
 		public void actionPerformed(ActionEvent e) {
 			PolyMLPlugin.sendCancelToPolyML();
 		}
@@ -129,7 +129,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 				btn.setToolTipText("PolyML is not currently processing a buffer");
 			}
 			btn.setEnabled(b);
-		};
+		}
 	};
 	
 	/**
@@ -171,9 +171,8 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	/**
 	 * Convenience method for dockable launching purposes.
 	 * @param view the view into which to provide this dockable
-	 * @throws InstantiationException 
 	 */
-	public StateViewDockable(View view) throws InstantiationException {
+	public StateViewDockable(View view) {
 		
 		this(view, "default");
 	}
@@ -182,9 +181,8 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 * Launch this dockable.
 	 * @param view the view into which to provide this dockable
 	 * @param position the dockable's position within the editor 
-	 * @throws InstantiationException 
 	 */
-	public StateViewDockable(View view, String position) throws InstantiationException {
+	public StateViewDockable(View view, String position) {
 		// add us to the editbus
 		if (StateViewDockable.busInstance != null) {
 			EditBus.removeFromBus(busInstance);
@@ -196,7 +194,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 		this.view = view;
 
 		// outer panel
-		if (position == DockableWindowManager.FLOATING) {
+		if (position.equals(DockableWindowManager.FLOATING)) {
 			setPreferredSize(StateViewDockable.DefaultSize);
 		}
 				
@@ -300,11 +298,9 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 */
 	public void scrollToBottom(boolean force) {
 		if (force || Boolean.parseBoolean(jEdit.getProperty(PolyMLPlugin.PROPS_SCROLL_ON_OUTPUT))) {
-			SwingUtilities.invokeLater(new Runnable() {
-				public void run() {
-					Rectangle target = new Rectangle(0, panel.getBounds().height, 1, 100);
-					panel.scrollRectToVisible(target);
-				}
+			SwingUtilities.invokeLater(() -> {
+				Rectangle target = new Rectangle(0, panel.getBounds().height, 1, 100);
+				panel.scrollRectToVisible(target);
 			});
 		}
 	}
@@ -339,7 +335,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 * a JEdit buffer at the specified location.
 	 */
 	public static Map<String,Object> propsForLocation(int offset, int length) {
-		Map<String,Object> props = new HashMap<String,Object>();
+		Map<String,Object> props = new HashMap<>();
 		// TODO: calculate caret and selection from offset/length?
 		props.put(Buffer.CARET, offset);
 		Selection sel = new Range(offset, offset+length);
@@ -353,7 +349,7 @@ public class StateViewDockable extends JPanel implements EBComponent {
 	 * TODO: take line offset into account.
 	 */
 	public static Map<String, Object> propsForLine(int lineNo, int lineOff) {
-		Map<String, Object> props = new HashMap<String,Object>();
+		Map<String, Object> props = new HashMap<>();
 		props.put(Buffer.SCROLL_VERT, lineNo);
 		return props;
 	}

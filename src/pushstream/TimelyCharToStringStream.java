@@ -19,7 +19,7 @@ public class TimelyCharToStringStream implements PushStream<Character>{
 	
 	public TimelyCharToStringStream(PushStream<String> s, int t) {
 		timeLimit = t;
-		pushString = new String();
+		pushString = "";
 		stream = s;
 		pushTime = null;
 	}
@@ -37,7 +37,7 @@ public class TimelyCharToStringStream implements PushStream<Character>{
 		if(! isMore) { // no more data waiting, push this string on. 
 			//System.err.println("no more: \'" + pushString + "\'");
 			stream.add(pushString);
-			pushString = new String();
+			pushString = "";
 			pushTime = null;
 		} else if(pushTime == null) { // no time limit set, set new time limit, no push
 			//System.err.println("resetting push time... ");
@@ -46,7 +46,7 @@ public class TimelyCharToStringStream implements PushStream<Character>{
 		} else if(pushTime < (new Date()).getTime()) { // time limit hit; push string onwards
 			//System.err.println("Hit time limit: \'" + pushString + "\'");
 			stream.add(pushString);
-			pushString = new String();
+			pushString = "";
 			if(isMore) { resetPushTime(); }
 			else { pushTime = null; }
 		}

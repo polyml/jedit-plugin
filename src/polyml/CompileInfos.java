@@ -11,15 +11,15 @@ import org.gjt.sp.jedit.Buffer;
 public class CompileInfos { // implements EBComponent
 	
 	/** from buffer location (used as internal ID) to parse ID */
-	private Map<String, CompileRequest> filenameToReq;
-	private Map<String, CompileRequest> parseidToReq;
+	private final Map<String, CompileRequest> filenameToReq;
+	private final Map<String, CompileRequest> parseidToReq;
 	private String lastRequestID;
 	
 	public CompileInfos(){
 		// goes from filename to Compile Request for that filename
-		filenameToReq = new Hashtable<String, CompileRequest>();
+		filenameToReq = new Hashtable<>();
 		// from parse id to the request (for looking up by parse id)
-		parseidToReq = new Hashtable<String, CompileRequest>();
+		parseidToReq = new Hashtable<>();
 		lastRequestID = null;
 	}
 
@@ -46,7 +46,7 @@ public class CompileInfos { // implements EBComponent
 	 * Gets all valid compile results.
 	 */
 	public Collection<CompileResult> getResults() {
-		Collection<CompileResult> out = new ArrayList<CompileResult>();
+		Collection<CompileResult> out = new ArrayList<>();
 		for (CompileRequest r : getRequests()) {
 			if (r.getResult() != null) {
 				out.add(r.getResult());
@@ -57,9 +57,6 @@ public class CompileInfos { // implements EBComponent
 
 	/**
 	 * called when a buffer is sent to be parsed
-	 * @param b
-	 * @param e
-	 * @param rid
 	 */
 	public synchronized void compilingRequest(CompileRequest newRequest, String requestID) {
 		// set last request ID

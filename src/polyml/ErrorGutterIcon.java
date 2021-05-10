@@ -51,7 +51,7 @@ public class ErrorGutterIcon extends ErrorVisualisation {
 		}
 		int line = textArea.getLineOfOffset(offset);
 
-		StringBuffer errMsg = new StringBuffer();
+		StringBuilder errMsg = new StringBuilder();
 		
 		for (PolyMLError e : getInfoOnLine(line)) {
 			errMsg.append("<br>");
@@ -60,7 +60,7 @@ public class ErrorGutterIcon extends ErrorVisualisation {
 		}
 
 		if (errMsg.length() > 0) {
-			return "<html>"+errMsg.toString()+"</html>";
+			return "<html>"+ errMsg +"</html>";
 		}
 		return null;
 	}

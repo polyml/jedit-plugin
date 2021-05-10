@@ -29,7 +29,7 @@ public class MarkupException extends Exception {
 		if(ch != null) {
 			System.err.println("MarkupException: ch: " + ch);
 		}
-		System.err.println("MarkupException: err: " + toString());
+		System.err.println("MarkupException: err: " + this);
 		printStackTrace();
 	}
 }

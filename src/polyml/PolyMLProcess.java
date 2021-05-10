@@ -56,8 +56,7 @@ public class PolyMLProcess {
 	volatile boolean mRunningQ;
 
 	// -
-	public PolyMLProcess(List<String> cmd) throws IOException {
-		super();
+	public PolyMLProcess(List<String> cmd) {
 		msgID = 0;
 		mRunningQ = false;
 		ideHeapFile = null;
@@ -72,7 +71,7 @@ public class PolyMLProcess {
 	}
 
 	// -
-	public PolyMLProcess() throws IOException {
+	public PolyMLProcess() {
 		super();
 		msgID = 0;
 		mRunningQ = false;
@@ -84,7 +83,7 @@ public class PolyMLProcess {
 		errorPushStream = null;
 		compileInfos = new CompileInfos();
 		//pendingCompiles = new LinkedList<CompileRequest>();
-		polyProcessCmd = new LinkedList<String>();
+		polyProcessCmd = new LinkedList<>();
 		polyProcessCmd.add("poly");
 		//polyProcessCmd.add("--ideprotocol --with-markup");
 	}
@@ -223,9 +222,6 @@ public class PolyMLProcess {
 	
 	/**
 	 * restart the process using the given command
-	 * 
-	 * @param cmd
-	 * @throws IOException
 	 */
 	public synchronized void restartProcess()
 			throws IOException {
@@ -253,7 +249,7 @@ public class PolyMLProcess {
 
 			// setup and start listening thread.
 			polyListener = new InputStreamThread(reader,
-					new CopyPushStream<Character>(new TimelyCharToStringStream(
+					new CopyPushStream<>(new TimelyCharToStringStream(
 							new PushStringToDebugBuffer(), 100),
 							new PolyMarkup(errorPushStream)));
 			
@@ -341,7 +337,7 @@ public class PolyMLProcess {
 
 	String getOffsetsString(EditPane t) {
 		int[] offsets = getOffset(t);
-		return Integer.toString(offsets[0]) + ESC_COMMA + Integer.toString(offsets[1]);
+		return offsets[0] + ESC_COMMA + offsets[1];
 	}
 
 	public synchronized void sendPolyQuery(EditPane p, char c, String more) {
@@ -353,7 +349,7 @@ public class PolyMLProcess {
 		}
 		
 		String requestid = Integer.toString(msgID++);
-		String cmd = ESC + Character.toString(c) + requestid 
+		String cmd = ESC + c + requestid
 				+ ESC_COMMA + lastParseID
 				+ ESC_COMMA + getOffsetsString(p);
 		
@@ -361,7 +357,7 @@ public class PolyMLProcess {
 			cmd += more;
 		}
 		
-		cmd += ESC + Character.toString(Character.toLowerCase(c));
+		cmd += ESC + Character.toLowerCase(c);
 		
 		//System.err.println("sendPolyQuery: " + PolyMarkup.explicitEscapes(cmd));
 		sendToPoly(cmd);
@@ -424,11 +420,6 @@ public class PolyMLProcess {
 	/**
 	 * WARNING: this does not set the parseInfo - this needs to be done, and is
 	 * done by the public version that works on buffers.
-	 * 
-	 * @param heap
-	 * @param srcFileName
-	 * @param startPos
-	 * @param src
 	 */
 	synchronized void sendCompileRequest(String requestid, CompileRequest compileRequest) {		
 		
@@ -464,8 +455,7 @@ public class PolyMLProcess {
 	
 	
 	/** 
-	 * Perform a compile request, locking the thread until the result of the compile request is received. 
-	 * @param compileRequest
+	 * Perform a compile request, locking the thread until the result of the compile request is received.
 	 */
 	public void syncCompile(CompileRequest compileRequest) {
 		synchronized(compileRequest) {
@@ -494,15 +484,13 @@ public class PolyMLProcess {
 
 	/**
 	 * compile a buffer
-	 * 
-	 * @param b
 	 */
 	public void sendCompileBuffer(Buffer b, EditPane e) {
 		String src = b.getText(0, b.getLength());
 		
 		// change directory to project directory, if there is a project
 		// directory.
-		String preSetupString = new String();
+		String preSetupString = "";
 		String projectPath = ProjectTools.searchForProjectDir(b);
 	
 		// load heap if there is one to be loaded
@@ -541,8 +529,6 @@ public class PolyMLProcess {
 
 	/**
 	 * Send string to PolyML
-	 * 
-	 * @param command
 	 */
 	public synchronized void sendToPoly(String command) {
 		
@@ -577,5 +563,4 @@ public class PolyMLProcess {
 			System.err.println("PolyProcess: writer is null! ");
 		}
 	}
-
 }

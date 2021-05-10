@@ -11,8 +11,8 @@ import pushstream.PushStream;
 
 public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 
-	CompileInfos compileInfos;
-	Object helloLock;
+	final CompileInfos compileInfos;
+	final Object helloLock;
 	
 	public PolyMarkupPushStream(CompileInfos compileInfos, Object helloLock) {
 		this.compileInfos = compileInfos;
@@ -80,7 +80,6 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 	
 	/**
 	 * handle location result by adding it to errorList
-	 * @param l
 	 */
 	void noteLocation(FullLocationResponse l) {
 		synchronized (PolyMLPlugin.jEditGUILock) {
@@ -238,7 +237,7 @@ public class PolyMarkupPushStream implements PushStream<PolyMarkup> {
 		else if(m.kind == PolyMarkup.KIND_MOVE) {
 			LocationResponse l = new LocationResponse(m);
 			CompileRequest cr = compileInfos.getFromParseID(l.parseID);
-			if(jEdit.getActiveView().getBuffer().getPath() == cr.fileName) {
+			if(jEdit.getActiveView().getBuffer().getPath().equals(cr.fileName)) {
 				jEdit.getActiveView().getTextArea().setSelection(new Selection.Range(l.start,l.end));
 			}
 			
