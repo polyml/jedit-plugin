@@ -43,7 +43,7 @@ public class CompileResult {
 	 * the result of a compilation request.
 	 */
 	public CompileResult(PolyMarkup m) {
-		errors = new LinkedList<PolyMLError>();
+		errors = new LinkedList<>();
 		
 		if(m != null) {
 			try {
@@ -162,7 +162,7 @@ public class CompileResult {
 
 	public String stringOfResult() {
 		String s, statusString, finalOffsetString;
-		s = new String();
+		s = "";
 		
 		if (status == STATUS_SUCCESS) {
 			statusString = "Compiled Successfully";

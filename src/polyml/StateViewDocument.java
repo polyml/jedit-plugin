@@ -1,24 +1,22 @@
 package polyml;
 
-import java.awt.Font;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import org.gjt.sp.jedit.jEdit;
 
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLDocument.BlockElement;
-
-import org.gjt.sp.jedit.jEdit;
+import java.awt.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class StateViewDocument {
 
 	/** Internal document */
 	private final HTMLDocument doc;
 	/** Root to which all text will be appended for now. */
-	private Element appendRoot;
+	private final Element appendRoot;
 
 	/**
 	 * Defines how status messages will be displayed.
@@ -36,17 +34,17 @@ public class StateViewDocument {
 		"  white-space: pre-wrap;\n"+
 		"  word-wrap: break-word;\n"+
 		"}\n"+
-		"."+String.valueOf(CompileResult.STATUS_SUCCESS)+" {\n" +
+		"."+ CompileResult.STATUS_SUCCESS +" {\n" +
 		"	color: green;\n" +
 		"}\n" +
-		"."+String.valueOf(CompileResult.STATUS_PRELUDE_FAILED)+", " +
-		"."+String.valueOf(CompileResult.STATUS_PARSE_FAILED)+", " +
-		"."+String.valueOf(CompileResult.STATUS_TYPECHECK_FAILED)+", " +
-		"."+String.valueOf(CompileResult.STATUS_EXCEPTION_RAISED)+" {\n" +
+		"."+ CompileResult.STATUS_PRELUDE_FAILED +", " +
+		"."+ CompileResult.STATUS_PARSE_FAILED +", " +
+		"."+ CompileResult.STATUS_TYPECHECK_FAILED +", " +
+		"."+ CompileResult.STATUS_EXCEPTION_RAISED +" {\n" +
 		"	color: red;\n" +
 		"}\n"+
-		"."+String.valueOf(CompileResult.STATUS_CANCEL)+", " +
-		"."+String.valueOf(CompileResult.STATUS_BUG)+" {\n"+
+		"."+ CompileResult.STATUS_CANCEL +", " +
+		"."+ CompileResult.STATUS_BUG +" {\n"+
 		"	color: magenta;\n" +
 		"}\n"+
 		".gray {\n"+
@@ -104,13 +102,11 @@ public class StateViewDocument {
 
 	/**
 	 * Gets the first named child element.
-	 * @param name
-	 * @return
 	 */
 	private Element getFirstChild(Element el, String name) {
 		for (int i = 0; i < el.getElementCount(); i++) {
 			Element e = el.getElement(i);
-			if (e.getName() == name) {
+			if (e.getName().equals(name)) {
 				return e;
 			}
 		}
@@ -207,12 +203,10 @@ public class StateViewDocument {
 			BufferedReader reader;
 			try {
 				reader = new BufferedReader(new FileReader(jEdit.getProperty(PolyMLPlugin.PROPS_STATE_OUTPUT_CSS_FILE)));
-				String line = null;
+				String line;
 				while (( line = reader.readLine()) != null) {
 				    rules.append(line + System.getProperty("line.separator"));
 				}
-			} catch (FileNotFoundException e) {
-				report = e.getMessage();
 			} catch (IOException e) {
 				report = e.getMessage();
 			}

@@ -9,7 +9,7 @@ public class History {
 	Integer mMaxSize;
 
 	public History(Integer size) {
-		mHistoryLL = new LinkedList<String>();
+		mHistoryLL = new LinkedList<>();
 		mMaxSize = size;
 	}
 	

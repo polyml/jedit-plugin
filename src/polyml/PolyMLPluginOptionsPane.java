@@ -46,7 +46,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 
 	private JCheckBox editableDocument;
 	private JCheckBox scrollOnOutput;
-	private JComboBox bufferChangeBehaviour;
+	private JComboBox<String> bufferChangeBehaviour;
 	
 	/**
 	 * Default constructor. Note that the name is important!
@@ -79,7 +79,7 @@ public class PolyMLPluginOptionsPane extends AbstractOptionPane
 		scrollOnOutput.setToolTipText("Scroll to the bottom of the status document when output changes?");
 		addComponent(scrollOnOutput);
 		
-		bufferChangeBehaviour = new JComboBox(PolyMLPlugin.PROPS_BUFFER_CHANGE_OPTIONS);
+		bufferChangeBehaviour = new JComboBox<>(PolyMLPlugin.PROPS_BUFFER_CHANGE_OPTIONS);
 		bufferChangeBehaviour.setEditable(false);
 		bufferChangeBehaviour.setToolTipText("Desired status document behaviour on buffer change");
 		bufferChangeBehaviour.setSelectedItem(PolyMLPlugin.PROPS_BUFFER_CHANGE_CLEAR); // set default

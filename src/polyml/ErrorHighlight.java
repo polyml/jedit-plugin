@@ -32,8 +32,8 @@ import org.gjt.sp.jedit.EditPane;
  */
 public class ErrorHighlight extends ErrorVisualisation {
 
-	private Segment seg;
-	private Point point;
+	private final Segment seg;
+	private final Point point;
 
 	public ErrorHighlight(EditPane editPane) {
 		super(editPane);

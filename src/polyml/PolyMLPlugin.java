@@ -27,7 +27,7 @@ import org.gjt.sp.jedit.textarea.TextArea;
  * Plugin class the PolyML Plugin for jedit.
  * 
  * @author Lucas Dixon
- * @created 03 November 2007
+ * @since  03 November 2007
  * @version 0.2.0
  */
 public class PolyMLPlugin extends EBPlugin {
@@ -57,16 +57,15 @@ public class PolyMLPlugin extends EBPlugin {
 	
 	static PolyMLProcess polyMLProcess;
 	static BufferEditor debugBuffer;
-	static PolyMLPlugin jEditGUILock;
+	static final Object jEditGUILock=new Object();
 	static Integer shellBufferNameCount;
 	static Integer debugBufferNameCount;
 
 	public PolyMLPlugin() {
 		super();
-		shells = new Hashtable<Buffer, ShellBuffer>();
+		shells = new Hashtable<>();
 		polyMLProcess = null;
 		debugBuffer = null;
-		jEditGUILock = this;
 		shellBufferNameCount = 0;
 		debugBufferNameCount = 0;
 		// System.err.println("PolyMLPlugin: started!");
@@ -119,7 +118,7 @@ public class PolyMLPlugin extends EBPlugin {
 	 */
 	public static List<String> getPolyIDECmd() {
 		String s = PolyMLPlugin.getPolyIDECmdString();
-		List<String> cmd = new LinkedList<String>();
+		List<String> cmd = new LinkedList<>();
 		// for (String s2 : s.split(" ")) {
 		// cmd.add(s2);
 		// }
@@ -229,8 +228,6 @@ public class PolyMLPlugin extends EBPlugin {
 	/**
 	 * If in a shell buffer, process rest of the input; else we treat the buffer
 	 * as an ML buffer and send buffer to ML and process contents
-	 * 
-	 * @param b
 	 */
 	static public void sendBufferToPolyML(Buffer b, EditPane pane) {
 		try {
@@ -268,7 +265,7 @@ public class PolyMLPlugin extends EBPlugin {
 			}
 		} catch (IOException e) {
 			// e.printStackTrace();
-			System.err.println(e.toString());
+			System.err.println(e);
 		}
 	}
 
@@ -375,26 +372,20 @@ public class PolyMLPlugin extends EBPlugin {
 			// System.err.println("newShellBuffer");
 
 			ShellBuffer s;
-			try {
-				BufferEditor be = new BufferEditor(b);
-				s = new ShellBuffer(be);
-				shells.put(b, s);
-				// show buffer after adding to shell list so that buffer
-				// changed events trigger use of text area extensions.
-				v.showBuffer(b);
+			BufferEditor be = new BufferEditor(b);
+			s = new ShellBuffer(be);
+			shells.put(b, s);
+			// show buffer after adding to shell list so that buffer
+			// changed events trigger use of text area extensions.
+			v.showBuffer(b);
 
-				String heap = ProjectTools.searchForBufferHeapFile(fromBuffer);
-				if (heap != null) {
-					be.append(ProjectTools.MLStringForLoadHeap(heap));
-				}
-
-				// s.showInTextArea(a); // done event in showBuffer
-				return s;
-			} catch (IOException e) {
-				// e.printStackTrace();
-				System.err.println(e.toString());
-				return null;
+			String heap = ProjectTools.searchForBufferHeapFile(fromBuffer);
+			if (heap != null) {
+				be.append(ProjectTools.MLStringForLoadHeap(heap));
 			}
+
+			// s.showInTextArea(a); // done event in showBuffer
+			return s;
 		}
 	}
 
@@ -427,17 +418,12 @@ public class PolyMLPlugin extends EBPlugin {
 		if (sb != null) {
 			sb.restartProcess();
 		} else {
-			try {
-				ShellBuffer s = new ShellBuffer(new BufferEditor(b));
-				shells.put(b, s);
-				
-				// turn on extra text area extensions for all views of this
-				// shell buffer
-				s.showInAllTextAreas();
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.err.println(e.toString());
-			}
+			ShellBuffer s = new ShellBuffer(new BufferEditor(b));
+			shells.put(b, s);
+
+			// turn on extra text area extensions for all views of this
+			// shell buffer
+			s.showInAllTextAreas();
 		}
 	}
 
@@ -457,8 +443,6 @@ public class PolyMLPlugin extends EBPlugin {
 	/**
 	 * when an edit pane shows a ShellBuffer, add the shell Buffer's
 	 * TextAreaExtension. (For showing the cool red prompt)
-	 * 
-	 * @param editPane
 	 */
 	public void usingShellBufferTextArea(EditPane editPane) {
 		synchronized (jEditGUILock) {
@@ -474,8 +458,6 @@ public class PolyMLPlugin extends EBPlugin {
 	/**
 	 * when an edit pane stops showing a ShellBuffer, remove the shell Buffer's
 	 * TextAreaExtension.
-	 * 
-	 * @param editPane
 	 */
 	public void unusingShellBufferTextArea(EditPane editPane) {
 		synchronized (jEditGUILock) {
@@ -562,7 +544,6 @@ public class PolyMLPlugin extends EBPlugin {
 
 	/**
 	 * Gets or creates the a new Debug Shell buffer.
-	 * @return
 	 */
 	static public BufferEditor newDebugShellBuffer() {
 		synchronized (jEditGUILock) {

@@ -41,10 +41,10 @@ import pushstream.TimelyCharToStringStream;
  * A Buffer that takes input to some shell, and shows the output from that shell
  * 
  * @author <a href="mailto:l.dixon@ed.ac.uk">Lucas Dixon</a>
- * @created 03 November 2007
+ * @since  03 November 2007
  * @version 1.0
  */
-public final class ShellBuffer extends Object {
+public final class ShellBuffer {
 
 	BufferEditor mOutputBuffer;
 	ReaderThread mShellListenThread;
@@ -66,9 +66,9 @@ public final class ShellBuffer extends Object {
 	/**
 	 * a new SmlShell with the name "SML"
 	 */
-	public ShellBuffer(BufferEditor b) throws IOException {
+	public ShellBuffer(BufferEditor b) {
 		super();
-		mShownInTextAreas = new HashMap<TextArea,PromptHighlighter>();
+		mShownInTextAreas = new HashMap<>();
 		mShellListenThread = null;
 		mShellProcess = null;
 		mShellWriter = null;
@@ -224,7 +224,7 @@ public final class ShellBuffer extends Object {
 				unShowInAllTextAreas();
 			} catch(IOException e) {
 				e.printStackTrace();
-				System.err.println("ShellBuffer:" + "stopProcess " + e.toString());
+				System.err.println("ShellBuffer:" + "stopProcess " + e);
 				//dbgMsg(e.toString());
 			}
 			mShellWriter = null;
@@ -252,7 +252,6 @@ public final class ShellBuffer extends Object {
 	/**
 	 * when something in the text area extensions are updated (e.g. prompt position),
 	 * tell the text area's showing the prompt position to update themselves.  
-	 * @param textArea
 	 */
 	public synchronized void invalidateTextAreas() {
 		for(TextArea t : mShownInTextAreas.keySet()){
@@ -261,10 +260,6 @@ public final class ShellBuffer extends Object {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param textArea
-	 */
 	public synchronized void showInTextArea(TextArea textArea) {
 		if(!mShownInTextAreas.containsKey(textArea)) {
 			PromptHighlighter promptHighlighter = new PromptHighlighter(mPos, textArea);
@@ -273,10 +268,6 @@ public final class ShellBuffer extends Object {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param textArea
-	 */
 	public synchronized void showInAllTextAreas() {
 		for(View v : jEdit.getViews()) {
 			if(v.getBuffer() == mOutputBuffer.getBuffer()) {
@@ -286,10 +277,6 @@ public final class ShellBuffer extends Object {
 		}
 	}
 	
-	/**
-	 * 
-	 * @param textArea
-	 */
 	public synchronized void unShowInTextArea(TextArea textArea) {
 		PromptHighlighter promptHighlighter = mShownInTextAreas.get(textArea);
 		if(promptHighlighter != null) {

@@ -3,10 +3,7 @@ package polyml;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.gjt.sp.jedit.Buffer;
-
-import polyml.PolyEBMessage;
+import java.util.List;
 
 public class CompileRequest {
 	String prelude;
@@ -22,14 +19,14 @@ public class CompileRequest {
 	/** compile result */
 	private CompileResult result;
 	/** cache of type information against this request */
-	private ArrayList<PolyMarkup> typeInfos;
+	private final List<PolyMarkup> typeInfos;
 	
 	/**
 	 * Create a new compile request; initially assumed to be unparsed. 
 	 * @param prelude request prelude
 	 * @param fileName user-end file path
 	 * @param src not entirely sure...
-	 * @param sentParseId for this version of the parse
+	 * @param sentParseID for this version of the parse
 	 */
 	public CompileRequest(String prelude, String fileName, String src, String sentParseID) {
 		super();
@@ -40,7 +37,7 @@ public class CompileRequest {
 		lastParseID = null;
 		prevParseID = null;
 		result = null;
-		typeInfos = new ArrayList<PolyMarkup>();
+		typeInfos = new ArrayList<>();
 	}
 	
 	public CompileRequest(String prelude, String fileName, String src) {

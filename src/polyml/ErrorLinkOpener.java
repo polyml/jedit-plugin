@@ -31,7 +31,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 		put("end", null);
 	}};
 	
-	private View view;
+	private final View view;
 		
 	/**
 	 * A new link opener. 
@@ -91,17 +91,13 @@ public class ErrorLinkOpener implements HyperlinkListener {
 				CompileInfos c = PolyMLPlugin.polyMLProcess.compileInfos;
 				sel = c.getFromPath(file).getResult().getRealPositionOf(start, end);
 				preferredCaretOffset = sel.getEnd();
-			} catch (NumberFormatException e) {
-				PolyMLPlugin.debugMessage("Failed to set selection for "+file+": "+e+".");
-			} catch (NullPointerException e) {
+			} catch (NumberFormatException | NullPointerException e) {
 				PolyMLPlugin.debugMessage("Failed to set selection for "+file+": "+e+".");
 			}
 		} else if (line != null) {
 			try {
 				preferredCaretOffset = ta.getLineStartOffset(line);
-			} catch (NullPointerException e) {
-				PolyMLPlugin.debugMessage("Failed to set line number for "+file+": "+e+".");
-			} catch (NumberFormatException e) {
+			} catch (NullPointerException | NumberFormatException e) {
 				PolyMLPlugin.debugMessage("Failed to set line number for "+file+": "+e+".");
 			}
 		}
@@ -125,15 +121,15 @@ public class ErrorLinkOpener implements HyperlinkListener {
 		if (theUrl == null || (checkProtocol && !theUrl.getProtocol().equals(ERROR_PROTOCOL))) {
 			return;
 		}
-		System.err.println("Attempting to open "+theUrl.toString()+"...");
+		System.err.println("Attempting to open "+ theUrl +"...");
 
 		// Open the file.
 		final String file = theUrl.getPath();
-		final HashMap<String,Integer> theArgs = new HashMap<String,Integer>(ErrorLinkOpener.intArgs);
+		final HashMap<String,Integer> theArgs = new HashMap<>(ErrorLinkOpener.intArgs);
 
 		// collect query arguments
 		if (theUrl.getQuery() != null) {
-			final ArrayList<String> parts = new ArrayList<String>(Arrays.asList(theUrl.getQuery().split("&")));
+			final ArrayList<String> parts = new ArrayList<>(Arrays.asList(theUrl.getQuery().split("&")));
 			for (String p : parts) {
 				String[] kv = p.split("=");
 				try {
@@ -141,7 +137,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 						theArgs.put(kv[0], Integer.parseInt(kv[1]));
 					}
 				} catch (NullPointerException e) {
-					PolyMLPlugin.debugMessage(" -- Could not parse "+kv[0]+" argument for "+ theUrl.toString() + " (" + e + ").");
+					PolyMLPlugin.debugMessage(" -- Could not parse "+kv[0]+" argument for "+ theUrl + " (" + e + ").");
 					break;
 				}
 			}
@@ -155,7 +151,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	 */
 	private void openBufferForURL(String theURL) {
 		try {
-			if (theURL.substring(0, ERROR_PROTOCOL.length()).equals(ERROR_PROTOCOL)) {
+			if (theURL.startsWith(ERROR_PROTOCOL)) {
 				theURL = theURL.replaceFirst("^"+ERROR_PROTOCOL, "http");
 				openBufferForURL(new URL(theURL), false);
 			}
@@ -187,7 +183,7 @@ public class ErrorLinkOpener implements HyperlinkListener {
 	 * click-time.
 	 */
 	public static String uriof(FlexibleLocationInfo l) {
-		StringBuffer uri = new StringBuffer();
+		StringBuilder uri = new StringBuilder();
 		uri.append(ERROR_PROTOCOL+"://"); // jerr://
 		uri.append(l.buffer.getPath());
 		String sep = "?";

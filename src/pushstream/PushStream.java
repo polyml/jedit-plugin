@@ -11,7 +11,7 @@ package pushstream;
  */
 public interface PushStream<C> {
 
-	public abstract void close();
-	public abstract void add(C c);
-	public abstract void add(C c, boolean isMore);
+	void close();
+	void add(C c);
+	void add(C c, boolean isMore);
 }
